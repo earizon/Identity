@@ -1,0 +1,64 @@
+## SAML Federated Identity
+* SAML stands for Security Assertion Markup Language, based on XML protocol
+* Use cases:
+  * Web Single Sign-On
+  * Identity Federation
+  * WS-Security
+* Federated identity model is founded on open standards adoption.
+* SAML compares to OAuth/OpenID
+* SAML defines resource access based on the identity of user/device/service
+* Standard data format for exchangin authentication and authorization data
+  between trusting parties
+* Usually between an identity providers and a service provider.
+* Individual COmpanies manage their own user identity stores, but share an
+  amount of required security verification data via a SAML token
+* SAML 2 is Flexible and extensible, it is designed to be used by other standards.
+  * SAML 1.0
+  * SAML 1.1
+  * SAML 2.0
+
+* It is beeing "replaced" (Not actually) by OAuth/OpenID when scaling Identity Providers
+  and federated identities from Companies Networks to the Internet Network,
+  where Google, Facebook... become the "super-identity providers".
+
+* SAML 2.0 Benefits:
+  * Platform neutral
+  * Increased security
+  * Commercial and open source support
+
+* SAML 2.0 profiles:
+  * Single Sign-On
+  * Single Sign-Out
+* Profiles define how SAML is used in the identity provider service.
+  (Assertions, protocols, bindings)
+
+* SAML protocol requires information to be exchanged between identity provider (eg.Azure AD)
+  and the service provider (the application).
+  * Azure AD    == asserting (issuing) party
+  * Application == relying (verifier) party
+
+* TRUST SETUP:
+
+   │Identity│
+   │Provider│<············· Authenticates Against <···
+     ^  ·                                            ·
+     ·  ·                                            ·
+     ·  ·                                        │User│
+     ·  ·                                            ·
+     ·  ·                                            ·
+     ·  ···> Setups Trust¹·> │Service │<·· Access ····
+     ·       relationship    │Provider│    services
+     ·                          ·          from
+     ·                          ·
+     ····· Delegates <·········─┘
+           User's Authentication to
+
+
+  ¹: Trust relationship setup is done by App developer with initial access to identity
+     provider by registering the |Service Provider| required info in the IdP. In
+     particular registering:
+     * Redirect URI
+     * Metadata URI used by IdP to retrieve the signing key and loguout URI of (cloud) service
+
+  Example Single sign-on/out endpoints in Azure AD:
+  https://login.microsoftonline.com/${TenantDomainName}/FederationMetadata/2007-06/FederationMetadata.xml

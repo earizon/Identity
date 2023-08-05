@@ -1,0 +1,735 @@
+[[{standards.web]]
+# JSON Web Token (JWT) [[{standards.jwt.troubleshoot,standards.web,use_case.AAA,use_case.signature,02_doc_has.comparative]]
+@[https://tools.ietf.org/html/rfc7519]
+  spect for compact, URL-safe means of REPRESENTING CLAIMS TO
+  BE TRANSFERRED BETWEEN TWO PARTIES.
+ - claims are encoded as a JSON object used as:
+   - the payload of a JSON Web Signature (JWS) structure
+     enabling the claims to be digitally signed using either:
+     - symetric shared secrets (HMAC)
+     - asymetrict key pairs RSA/ECDSA.
+
+   - the plaintext of a JSON Web Encryption (JWE) structure.
+     enabling the claims to be integrity protected with a
+     Message Authentication Code (MAC) and/or encrypted.
+
+- (Very Good) Introduction to JWT!!!
+  @[https://jwt.io/introduction/]
+  @[https://jwt.io/#debugger]
+- online JWT debugger to decode, verify and generate JWT,
+  detailed list of libraries (Java, Python, C#, Rust,...)
+  and other useful info.
+
+@[https://github.com/tldr-pages/tldr/blob/master/pages/common/jwt.md]
+  $ jwt decode {{jwt_string}}       ←  Decode a JWT.
+                                       -j to decode as JSON string
+
+  $ jwt encode --alg {{HS256}} \   ← Encode a JSON string → JWT
+$  --secret {{1234567890}}     \
+$  '{{json_string}}'
+
+  $ jwt encode --alg {{HS256}} \   ← Encode key pair payload to JWT
+$   --secret {{1234567890}}    \
+$  -P key=value
+  -----------------------------------------------
+  JWT structure  (JWS structure)
+  xxxxx.yyyyyyyyyyyyyyyyyyy.zzzzz ← Base64URL encoded
+  ^     ^                   ^     ↖
+  │  ┌──┘                   │      ☞ format more compact when compared to
+  │  │  ┌───────────────────┘        XML-based standards such as SAML.
+  │  │  │
+  │  │  SIGNATURE
+  │  │  Base64URL ( signed [Base64URL-encoded HEADER, Base64URL_encoded PAYLOAD] )
+  │  │             └ (with shared_secret or priv.key)
+  │  │               (Using signature algorithm of HEADER)
+  │  PAYLOAD
+  │  - claims about an entity + additional data.
+  │
+  │  - types of claims:
+  │    - registered : non mandatory but recommended for interoperability:
+  │       "iss" (issuer)           "sub" (subject)     "jti" (JWT ID) Claim
+  │       "exp" (expiration time)  "aud" (audience)
+  │       "iat" (Issued At)        "nbf" (Not Before)
+  │
+  │    - public     : Defined at will. To avoid collisions they should be defined
+  │                   in the IANA JSON Web Token Registry or be defined as a URI
+  │                   that contains a collision resistant namespace.
+  │
+  │    - private    : custom claims between parties
+  │
+  HEADE
+  typically consists of:
+  {
+    "alg": "HS256", ← signing algorithm used (HMAC SHA256, RSA, ECDSA...)
+    "typ": "JWT"    ← type of tokern (JWT)
+  }
+
+- A common JWT ussage pattern involves client sending the JWT in the
+  HTTP Authorization header using the Bearer-schema:
+  Authorization: Bearer <token>
+  ( Stateless authorization )
+
+  NOTE: By sending in the Authorization header, Cross-Origin Resource Sharing
+    (CORS) won't be an issue as it doesn't use cookies.
+
+- A typical OpenID-Connect compliant web-application will go through the
+  /oauth/authorize endpoint using the authorization code flow.
+  When the authorization is granted, the authorization server returns an
+  access token back to the application.
+
+- no secret information must be placed into the PAYLOAD unless the JWT is
+  encrypted.
+
+- Don't store JWT inside localStorage or session storage since it's
+  accessible by any script inside the page: an XSS attack or a compromised
+  page can let an external attacker get access to the token.
+
+- Stored JWT inside an httpOnly cookie, that’s only sent in
+  HTTP requests to the server and it's never accessible
+  (both for reading or writing) from JS running in the browser.
+
+- Don't use JWT as Sessions since it's error prone.
+
+  Signing XML with XML Digital Signature is very complex and error prone [[{02_doc_has.comparative]]
+when compared to the simplicity of signing JSON.  [[}]]
+
+## JSON Web Signature (JWS)[[{]]
+ @[https://tools.ietf.org/html/rfc7515]
+  JSON Web Signature (JWS) represents content secured with digital
+  signatures or Message Authentication Codes (MACs) using JSON-based
+  data structures.  Cryptographic algorithms and identifiers for use
+  with this specification are described in the separate JSON Web
+  Algorithms (JWA) specification and an IANA registry defined by that
+  specification.  Related encryption capabilities are described in the
+  separate JSON Web Encryption (JWE) specification. [[}]]
+
+## JSON Web Encryption (JWE) [[{]]
+@[https://tools.ietf.org/html/rfc7516]
+    Spec for JSON objects representin encrypted content.
+  Related digital signature and Message Authentication Code (MAC)
+  capabilities are described in the separate JSON Web Signature(JWS)
+   specification. [[}]]
+
+## JSON Web Key (JWK) [[{]]
+@[https://tools.ietf.org/html/rfc7517]
+  Spec for a JSON data structure representing a cryptographic key
+  It defines also a JWK-Set JSON for set of JWKs.
+  [[}]]
+
+## JSON Web Algorithms (JWA) [[{]]
+@[https://tools.ietf.org/html/rfc7518]
+   This specification registers cryptographic algorithms and identifiers
+   to be used with the JSON Web Signature (JWS), JSON Web Encryption
+   (JWE), and JSON Web Key (JWK) specifications.  It defines several
+   IANA registries for these identifiers. [[}]]
+
+## JOSE: (J)SON (O)bject (S)igning and (E)ncryption [[{]]
+* JOSE == JWS + JWE + JWK + JWA
+
+ Following is a decoded JSON payload representing an example
+ of JOSE protected header parameters as defined by the JWS JSON
+ Serialization syntax.
+ {
+   "name": "identityKey",← extension 1
+   "alg" : "ES256K",     ← ECDSA using secp256k1 curve + SHA-256
+   "typ" : "JOSE+JSON",  ← media type of complete JWS
+   "b64" : false,        ← extension 2
+                           true ⇒ payload=ASCII(BASE64URL(JWS Payload))
+   "crit": ["b64"],      ← Critical extensions that must be accepted
+   "jwk" :  {            ← pub.key used to sign JOSE header+JWS payload.
+     "kty": "EC",          represented as JSON Web Key
+     "use": "sig",       ← Intended user
+     "crv": "secp256k1",
+     "x"  : "0",         ← X-coordinate of corresponding pub key.
+     "y"  : "0",         ← Y-coordinate of the corresponding pub key.
+   },
+ }
+
+ - JOSE Implementations:
+   @[https://www.npmjs.com/package/node-jose]
+   JS implementation of the JSON Object Signing and Encryption (JOSE)
+   for current web browsers and node.js-based servers. This library implements
+   (wherever possible) all algorithms, formats, and options in JWS, JWE, JWK, and
+   JWA and uses native cryptographic support (WebCrypto API or node.js' "crypto"
+   module) where feasible.
+   Ex ussage:
+   // Create Self Signed JSON token
+   const  privKey01 = jose.JWK.asKey(
+       "-----BEGIN PRIVATE KEY-----\n" +
+       ...
+       "-----END RSA PRIVATE KEY-----");
+   const payload = { iss:"service1", aud:"service2" };
+   const  JWT01 = jose.JWT.sign (payload, privKey01 , { expiresIn: "1 hours" });
+[[}]]
+
+## Selective Disclosure for JWTs (SD-JWT) [[{]]
+  https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/
+    The JSON-based representation of claims in a signed JSON Web Token
+  (JWT) [RFC7519] is secured against modification using JSON Web
+  Signature (JWS) [RFC7515] digital signatures.  A consumer
+  checking the signature can safely assume that the contents of the
+  token have not been modified.  HOWEVER, ANYONE RECEIVING AN
+  UNENCRYPTED JWT CAN READ ALL OF THE CLAIMS AND LIKEWISE,
+  ANYONE WITH THE DECRYPTION KEY RECEIVING AN ENCRYPTED JWT CAN ALSO
+  READ ALL OF THE CLAIMS.
+
+    The ability to selectively disclose a subset of JWT claims
+  depending on the Verifier becomes crucial to ensure minimum
+  disclosure and prevent Verifiers from obtaining claims irrelevant for
+  the transaction at hand.
+[[}]]
+
+
+
+[[}]]
+
+
+# OAuth [[{protocol.OAuth,use_case.AAA,standards.web,]]
+        [[02_doc_has.comparative,standards.jwt,02_doc_has.diagram]]
+  @[https://tools.ietf.org/html/rfc6749]
+  @[https://alexbilbie.com/guide-to-oauth-2-grants/]
+
+
+* OAuth TRUST SETUP:
+
+  ```
+        ············0) Onboards to OAuth ···················
+        ·              provider setting up e-amil,         ·
+        v              e-mail, MFA, biometrics,...         ·
+   │OAuth   │                                              ·
+   │Provider│<···········3) Authenticates Against <···     ·
+     ^  ·                   OAuth Provider obtaining ·     ·
+     ·  ·                   bearer(session)          ·     ·
+     ·  ·                   token                 │Client│··
+     ·  ·                                    (Web Brower,Server/Mobile App
+     ·  ·                                    making requests on behalf of
+     ·  ·                                    the resource owner)
+    authorization.
+     ·  ·                                            ·
+     ·  ·                                            ·
+     ·  ·                                            ·
+     ·  ··>2) Setups Trust·> │Service │<· 4) Access ··
+     ·        relationship   │Provider│    services
+     ·                        (REST API)   from
+     ·                          ·
+     ···1) Delegates <·········─┘
+           User's Authentication to
+           OAuth provider.
+           by registering the app
+           in the pre-setup
+
+  GIVEN
+      An Enterprise ready OAuth Provider (Keycloak, GoTrue, Okka, Azure AD,...)
+    is in place.
+  AND
+  GIVEN
+     Service Provider (REST API) wants to delegate authorization
+    to the OAuth Provider to avoid duplicating repetitive and error
+    prone code logic and functionality like onboarding new
+    users, groups, roles, MFA, multitenancy, user's management control
+    panels, ....
+  WHEN
+     The Service Provider Developer (or Admin) registers the app to
+     the OAuth provider using a shared secret and and Application unique ID
+     @startuml
+     participant "App Developer" as dev
+     participant "OAuth Server"  as OAS
+
+     dev -> OAS : Register OAuth client
+     OAS -> dev : tuple (client.id, client.secret)
+     dev -> dev : write in (secret) config file
+     @enduml
+  THEN
+     OAuth provider trusts Authentication-request comming from Users
+     initiated by the trusted REST API.
+  THEN
+     User accesing the REST API can obtain an signed access token from the
+     OAuth Provider and attach it to any request to the REST API.
+  THEN
+     On each request from the client, the REST API can validate the signature
+     from the bearer token an fetch the information of interest regarding
+     authorization.
+  ```
+
+* NOTE: A normal OAuth provider will decouple next two core features:
+  1. User onboarding
+  2. Application registration.
+    Doing so allows the OAuth provider to link users and group of users to
+  different application with different permissions.
+   A same user can have different roles in different applications:
+  User A can be "super user" or Administrator of App A, but just a
+  "restricted user" of App B while it has absolutely no access to App C.
+* An OAuth client can be a normal user or another application.
+  In the later case, OAuth effectively allows applications to access
+  resources in other applications in a restricted and controlled way.
+
+
+* Formal OAuth entities defined by the protocol:
+  * Resource Server: (REST API, gRPC, JSON-RPC,..) server hosting
+      the protected resources validating signed bearer tokens.
+  * Resource owner : Final client interacting with the OAuth Client.
+      to access its resources in remote resource server.
+  * access token   : signed (by OAuth provider) token with registered
+      permissions to let a given client access some protected resource/s.
+  * Scope          : When an server app registers as an OAuth client to
+      access another existing server app it indicates what (permission)
+      scopes it wants access to. For example, my custom App A wants
+      "read contacts" scope to read e-mail contacts from Gmail on
+      behalf of the real user. In practice, when the user first access
+      the App A, it will be redirected to the OAuth Server and will
+      be prompted to allow or deny "App A" the "read contacts" scope
+      through a popup like UI. Finally issued access-tokens will be
+      limited (scoped) to the to granted scopes.
+    * No particular scopes ared defined in OAuth spec(highly dependent
+       on service's internal Architecture)
+    * The OAuth Server can further limit the set of scopes (permission)
+      granted to App @[tools.ietf.org/html/rfc6479#section-3.3]
+
+## OAuth "RESOURCE OWNER CREDENTIALS" GRANT
+* Section 4.3 in Spec.
+* "great user experience" for trusted first party clients
+  (web/mobile/native apps vs 3rd party apps)
+* ```
+  PRE-SETUP:
+  - User has been onboarded to OAuth Server.
+  - Remote App has been registered against OAuth Server with a set of
+    requested scoped. IT department took charge of this.
+  - User and Remote App have a link granting user a set of authorizations
+    and roles over the remote App. Probably HHRR or Admin department took
+    charge of this.
+                                                                  ┌────────────────────┐
+     ┌────────────┐          ┌──────────┐                         │OAuth Client        │
+     │OAuth Server│          │Remote App│                         │(Browser/Mobile App)│
+     └─────┬──────┘          └────┬─────┘                         └────────────────────┘
+           │                      │ <────────────────────────── 1) GET ... ─┤
+           │                      │────┐ 2) signed bearer access token      │
+           │                      │<───┘    not found                       │
+           │                      ├ 3) redirect to OAuth2 Server ───────────>
+           │                      │                                         │
+           │ <─────── 4)  GET oauth2/token?client_id=...&client_secret=... ─┤
+           │                      │                                         │
+           │ "POPUP"                                                        │
+           │ ¿user credentials?  ¿scope/s granted?                          │
+           ├────────────────────────────────────────────────────────────────>
+           │                      │                                5) POST  │
+           │ <──────────────────────────────────────────────────────────────┤
+           │  ╔ POST BODY ════════════════════════════════════════════════╗ │
+           │  ║field          value                                       ║ │
+           │  ║-------------- ------------------------------------        ║ │
+           │  ║grant_type     "password"            ┐ OAuth data          ║ │
+           │  ║client_id      ${APP.clientID}       │ identifying the     ║ │
+           │  ║client_secret  ${APP.secret}         │ pre-registered      ║ │
+           │  ║scope          ${SPACE_DELIM_SCOPES} ┘ Application/Service ║ │
+           │  ║    (OAuth server can further restrict the set of          ║ │
+           │  ║     scopes according to company policies)                 ║ │
+           │  ║                                                           ║ │
+           │  ║username       ${username}           ┐ User's credentials  ║ │
+           │  ║password       ${password}           ┘                     ║ │
+           │  ║    (OAuth server can also require extra MFA/biometric     ║ │
+           │  ║     credentials in addition to the username and pass)     ║ │
+           │  ╚═══════════════════════════════════════════════════════════╝ │
+           │                      │                                         │
+           │  JSON object with with signed tokens:                          │
+           ├────────────────────────────────────────────────────────────────>
+           │  - token_type     "Bearer"                                     │
+           │  - expires_in     ...                                          │
+           │  - access_token   ...  <·· Attach to App's requests            │
+           │  - refresh_token  ...  <·· used to refresh tokens              │
+           │                      │                                         │
+           │                      │                               ┌────────────────────┐
+     ┌────────────┐          ┌──────────┐                         │OAuth Client        │
+     │OAuth Server│          │Remote App│                         │(Browser/Mobile App)│
+     └────────────┘          └──────────┘                         └────────────────────┘
+
+  @startuml
+  participant "OAuth Server" as  OAS
+  participant "Remote App"  as RA
+  participant "OAuth Client\n(Browser/Mobile App)" as client
+
+
+  client -> RA      : GET ...
+  RA     -> RA      : signed bearer access token not found
+  RA     -> client  : redirect to OAuth2 Server
+  client -> OAS     : GET oauth2/token?client_id=...&client_secret=...
+  OAS    -> client  : user credentials?,\nList of scopes granted?
+  client -> OAS     : POST
+  note over client, OAS
+    POST BODY
+    field          value
+    -------------- ----------------------------------------
+    grant_type     "password"                ┐ OAuth data
+    client_id      ${APP.clientID}           │ identifying the
+    client_secret  ${APP.secret}             │ pre-registered
+    scope          ${SPACE_DELIMITED_SCOPES} ┘ Application/Service
+        (OAuth server can further restrict the set of
+         scopes according to company policies)
+
+    username       ${username}               ┐ User's credentials
+    password       ${password}               ┘
+        (OAuth server can also require extra MFA/biometric
+         credentials in addition to the username and pass)
+  end note
+  OAS   -> client : JSON object
+  note over client, OAS
+    token_type     "Bearer"
+    expires_in     ...
+    access_token   ...     <·· Attach to App's requests
+    refresh_token  ...     <·· used to refresh tokens
+  end note
+  @enduml
+  ```
+
+## OAuth client credentials grant
+* (sect.4.4)
+│  - simplest oauth 2.0 grants         │
+│  - suitable for machine-to-machi.Auth│
+│    where a specific user's permission│
+│   to access data is not required.    │
+│client → auth.Ser: post               │
+│                   grant_type         │
+│                   client_id          │
+│                   client_secret      │
+│                   scope              │
+│client ← auth.Ser: json               │
+│                   token_type "bearer"│
+│                   expires_in         │
+│                   access_token       │
+└──────────────────────────────────────┘
+
+
+## OAuth refresh token grant
+* (section1.5)
+│client → auth.Ser: post           │
+│                   grant_type     │
+│                   refresh_token  │
+│                   client_id      │
+│                   client_secret  │
+│                   scope          │
+│client ← auth.Ser: json           │
+│                   token_type     │
+│                   expires_in     │
+│                   access_token   │
+│                   refresh_token  │
+└──────────────────────────────────┘
+
+## AUTHORIZATION CODE GRANT
+(Section 4.1)
+
+│  STEP 1: Authenticating user and getting Auth. code     │
+│ user → client: req resource                             │
+│ user ← client: redirect to Authorization Server         │
+│                --------------------------------         │
+│            URL query parameters in redirect URL         │
+│            - response_type with the value code          │
+│            - client_id     with the client identifier   │
+│            - redirect_uri  (opt) defaults to            │
+│                            pre-registered URI           │
+│            - scope         a space delimited scope-list │
+│            - state         (opt, but highly recommended)│
+│                            Used to avoid "mixing"       │
+│                            different user's session on  │
+│                            callback                     │
+│ user → auth.ser: ...?response_type=..                   │
+│                     &client_id=..                       │
+│                     &redirect_uri=..                    │
+│                     &scope=..&state=...                 │
+│ auth.ser → auth.ser: validate input                     │
+│ user ← auth.ser: Login                                  │
+│ user → auth.ser: "Credentials" proof                    │
+│              (can involve form with user/pass           │
+│               or complex multiFactor Auth/channel/steps)│
+│ auth.ser → auth.ser: Validate "credentials" proof       │
+│ user ← auth.ser: Redirect to reditect_uri               │
+│                     ------------------------            │
+│                     URL reditect parameters:            │
+│               - code  with the authorization code       │
+│               - state (param.sent in original request)  │
+│ user → client  :URL?code=....&state=...                 │
+│ client → client: check Init State = Receive state       │
+│                  (Avoid mixing different user sessions) │
+│                  Associate code to user's session       │
+│                                                         │
+│  STEP 2: Using code to get Access Token                 │
+│ client → auth.ser: POST                                 │
+│                    ────                                 │
+│                    grant_type with the value of         │
+│                    authorization_code                   │
+│                    client_id  with the client identifier│
+│                    client_secret  with the client secret│
+│                    redirect_uri (original redirect URI) │
+│                    code                                 │
+│ client ← auth.ser: JSON object                          │
+│                token_type     usually "Bearer"          │
+│                expires_in     access token TTL(Integer) │
+│                access_token   the access token itself   │
+│                refresh_token  used refresh on expiration│
+│                               time                      │
+└─────────────────────────────────────────────────────────┘
+
+## IMPLICIT GRANT
+ (SECTION 4.2)
+│   "WEB BROWSER*                                                      │
+│   - similar to AUTHORIZATION CODE GRANT Sec. 4.1) with               │
+│     two distinct differences:                                        │
+│     - Targeting user-agent-based clients (e.g. single page web apps) │
+│       that can't keep a client secret because all of the application │
+│       code and storage is easily accessible.                         │
+│     - instead of the Authorization Server returning an authorization │
+│       code which is exchanged for an access token, the authorization │
+│       server returns an access token.                                │
+│                                                                      │
+│ user → client: request access                                        │
+│ client → user: redirect to Auth.Server                               │
+│                -----------------------                               │
+│                URL req. param:                                       │
+│                response_type     with the value token                │
+│                client_id         with the client identifier          │
+│                redirect_uri      Optional. Def.to pre-registered one │
+│                scope             a space delimited list of scopes    │
+│                state             (optional but highly recommended)   │
+│ user → auth.server: ...                                              │
+│ auth.server → auth.server: checks...                                 │
+│ user ← auth.server: request Credentials                              │
+│ user → auth.server: login with "credentials" proofs                  │
+│                     and  approve the client                          │
+│ user ← auth.server: redirect to client                               │
+│                     -----------------------                          │
+│                     token_type    "Bearer"                           │
+│                     expires_in    TTL                                │
+│                     access_token  the access token itself            │
+│                     state         must be compared in client         │
+│                                   with the original value            │
+│                     ^^^^^^^^^^^^                                     │
+│                     this grant does NOT return                       │
+│                     refresh token because the browser                │
+│                     has no means of keeping it private               │
+└──────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* See also:
+  * @[https://oauth.net/2/]
+  * @[./GoTrue_OAuth.md]
+[[}]]
+
+
+
+# OpenID 2 [[{use_case.identity,standards.OpenID]]
+* Simple layer built on top of OAuth 2.0 protocol:
+  * OAuth 2 provides a JWT authorization token allowing users to acess services/resources .
+  * In OpenID, the Identity Provider adds claims about a subject to the JWT token
+    in order to provide authentication (who is the user plus basic profile information)
+
+[[}]]
+# OpenID Connect [[{use_case.identity,standards.OpenID]]
+@[https://en.wikipedia.org/wiki/OpenID]
+- OpenID Connect (2014) combines the features of OpenID 2.0, OpenID Attribute Exchange 1.0,
+  and OAuth 2.0 in a single protocol. Summarized:
+  - When our app contacts OAuth 2 servers requesting a new "code" it add the
+    scope "OpenID" (reminder: the scope list is the list of permissions we want to be
+    granted for our app once the OAuth 2 finish properly).
+      The OAuth 2.0 flows continues as ussual, but in the last step, when the
+    access-token is returned (the signed authorization token to access some resource/s),
+    a signed JWT token is also returned in parallel with a set of identity "key:value" claims
+    about the subject. (ej: { name: "Betty Mullan", isOlderThan18: yes, drivingLicence: "yes",
+    signedBy: .... }. Basically, it returns information about the user connected to the
+    (access-token) session.
+[[}]]
+
+## Dex: Federated OpenID-Connect service [[{01_PM.TODO,01_PM.low_code]]
+@[https://github.com/dexidp/dex] 7.8K starts in Github as of 2023-01.
+- KEY-POINT: CLIENTS WRITE THEIR AUTHENTICATION LOGIC ONCE TO TALK TO DEX,
+             THEN DEX HANDLES THE PROTOCOLS FOR A GIVEN BACKEND through
+             "connectors." (LDAP servers, SAML providers, ID providers -GitHub, Google, AD,- ...)
+- It compares to Keycloak: [[{02_doc_has.comparative]]
+https://medium.com/@sct10876/keycloak-vs-dex-71f7fab29919
+- Both are sponsored by RedHat.
+- Dex support:
+  - OIDC Provider
+  - User Federation to Github/SAML/LDAP
+  - Standard OIDC Scopes
+  - API
+  - Stable (k8s) Helm Chart
+
+- Keycloak also features:
+  - Custom Scopes/Claims.
+  - Dex provides several non-standard claims but those are not really customized.
+    Keycloak allows you put any key/value in the user attribute and include in
+    the user token as custom claim.
+  - REST API
+  - supports well-documented REST API (vs only gRPC in Dex)
+  - LDAP Federation with Group/User sync.
+  - Dex supports LDAP connector to authenticate with LDAP server.
+    Keycloak goes further and can sync LDAP users and groups locally
+    to do authorization.
+  - Authorization via local Role.
+  - Keycloak has a local user-database allowing to setup Role for authorization.
+  - Web UI
+  - Built-in Event logs for audit/troubleshooting.
+  - Realms allows admin to create isolated OIDC virtual context (sort of "namespaces").
+  - Custom Login Flows.
+  - Two FA Auth - TOTP via Google Authenticator or Free OTP.
+  - JavaScript Client adapters.
+  - Kerberos bridge
+
+- Dex is an simple to use and setup OIDC provider while Keycloak is
+  an Identity and Access Management service requiring an SQL  Database.
+
+- Dex is preferred when an Identity Provider (AD, SAML, Github..etc) is
+  already in place and we just need an OIDC bridge for apps.
+- Keycloak can fully replace existing Identity providers.
+[[02_doc_has.comparative}]]
+
+[[}]]
+
+# OpenID vs OAuth2 vs SAML [[{use_case.AAA,02_doc_has.comparative]]
+REF: @[https://spin.atomicobject.com/2016/05/30/openid-oauth-saml/]
+
+- single sign-on (SSO) allows a user to enter sign once
+  and "enter" multiple applications or web-sites.
+  This means that some sort of "authentication token"
+  must be provided to the user on first sign for later
+  reuse.
+
+- developers of the SSO applications don't have to
+  store or request for passwords. Instead, they can
+  accept proof of identity or authorization
+  from a trusted source
+
+- OpenID, OAuth2 and SAML are different security protocols
+  for single sign-on
+
+## OpenID
+  - open standard for authentication
+  - As of March 2016, there are over a billion
+    OpenID-enabled accounts on the internet.
+  - Google, WordPress, Yahoo, PayPal use OpenId
+    to authenticate users.
+
+  - OpenID FLOW:
+    user → id_provider01: request OpenID account
+    user ← id_provider01: OpenID account
+                          ^^^^^^^^^^^^^^
+                          technically it's a URL
+                          (e.g. alice2016.myIDprovider.org)
+
+    user → web_site login_screen: Select "sign with id_provider01"
+           (relying party)
+    web_site login_screen → id_provider01: request association handle
+    web_site login_screen ← id_provider01: association handle
+    user ← web_site login_screen: redirect to id_provider01 login page
+    user → id_provider01: enter OpenID account + credentials (pass,...)
+    user ← id_provider01: auth.token + url_redirect o web_site
+                          ^^^^^^^^^^
+                          signed claim statying that id_provider01
+                          believes user is actually user
+    user → web_site url : auth.token
+    web_site url → web_site url : Check auth.token is signed by trusted
+                                  id_provider01
+    web_site url → web_site url : Create session for user
+    user ←→ web_site url : --- app session ---
+
+  - 2014: Latest version (OpenID Connect) combines:
+    - OpenID authentication  (user is who he claims to be)
+    - OAuth2 authorization   (user is authorized a set of actions)
+
+## OAuth2
+  - Confusingly, OAuth2 is also the basis for OpenID Connect -2014-)
+  - Confusingly also, authorization is also considered some time a form
+    of pseudo-authentication and OAuth2 is claimed to be an
+    authentication standard. (An authorization signed token is a
+    claim that the user is believed to be himself for the act of
+    executing an action or accesing some resource).
+
+  - open standard for authorization.
+  - OAuth2 provides secure delegated access:
+    - application clients will use temporal tokens issued by
+      the identity-provider to the user to access resources
+      on another resource-server on behalf of the user.
+
+## SAML:
+  - 2001: oldest standard of the three
+  - 2005: latest update.
+  - stands for Security Assertion Markup Language.
+  - provides authentication + authorization.
+  - SAML defines:
+    - principal (end user).
+    - service provider (application web site)
+    - identity provider:  server holding principal's ids + credentials.
+
+  user           → ser_rovider01: request service (action on a webapp)
+  ser_provider01 → id_provider  : XML message
+                                  -----------
+                                  required info
+                                  who_is_asking (ser_provider01)
+                                  response_url
+  id_provider    → response_url : SAML signed response assertion
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 (similar to a token in OpenID/OAuth2).
+                                  The assertion can contain statements
+                                  about authentication, authorization,
+                                  and/or attributes (emails, phones,...).
+
+  SAML 2.0 defines:
+  - assertions:
+  - protocols : assertion requests and responses
+  - bindings  : how requests/responses happen between the service provider and
+                identity provider using communication methods like HTTP POST
+  - profile   : allowed combinations of (assertions, protocols, bindings)
+                for various use cases, like SSO.
+
+                      OAuth2             OpenId              SAML
+
+  Token format        JSON or SAML2      JSON                XML
+  (assertion)
+
+  Authorization?      Yes                No                  Yes
+
+  Authentication?     Pseudo-auth        Yes                 Yes
+
+  Year created        2005               2006                2001
+
+  Current version     OAuth2             OpenID              SAML 2.0
+                                         Connect
+
+  Transport           HTTP               HTTP                - HTTP Redirect
+                                         GET/POST              (GET) binding
+                                                             - SAML SOAP
+                                                               binding
+                                                             - HTTP POST
+                                                               binding
+                                                             - "others"
+
+  SECURITY RISKS      Phishing[1]        Phishing[1]         XML Signature
+                                                             Wrapping to
+                                                             impersonate
+                                                             any user
+
+
+
+  Best suited for     - API              - consumer apps     enterprise
+                        authorization      Single sign-on    Single sign-on
+                                           delegating SSO
+                                           to Google,...
+
+[[}]]
