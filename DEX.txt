@@ -1,0 +1,177 @@
+# Dex:   [[{01_PM.low_code]]
+
+* <https://github.com/dexidp/dex> (7.8K starts in Github as of 2023-01)
+* Light KeyCloak/Oak/... alternitive.
+
+* OpenID Connect (OIDC) identity and OAuth 2.0 provider with pluggable connectors 
+* Dex is a Federated OpenID-Connect identity and OAuth 2.0 provider, 
+  simpler and lighter than KeyCloak when an Identity Provider 
+  (LDAP servers, Microsoft AD, SAML, Github, Google, ...) is already in
+  place and we just need an OIDC bridge for apps.
+
+[[{doc_has.key-point]]
+**clients write their authentication logic once to talk to dex,
+then dex handles the protocols for a given backend** through
+"connectors." (LDAP servers, SAML providers, ID providers 
+-GitHub, Google, AD,- ...)
+[[}]]
+
+[[{02_doc_has.comparative]]
+## Compared to Keycloak
+* REF: <https://medium.com/@sct10876/keycloak-vs-dex-71f7fab29919>
+* Both are sponsored by RedHat.
+* Dex support:
+  * OIDC Provider
+  * User Federation to Github/SAML/LDAP
+  * Standard OIDC Scopes
+  * API
+  * Stable (k8s) Helm Chart
+* Keycloak also features:
+  * Custom Scopes/Claims.
+  * Dex provides several non-standard claims but those are not really customized.
+    Keycloak allows you put any key/value in the user attribute and include in
+    the user token as custom claim.
+  * REST API
+  * supports well-documented REST API (vs only gRPC in Dex)
+  * LDAP Federation with Group/User sync.
+  * Dex supports LDAP connector to authenticate with LDAP server.
+    Keycloak goes further and can sync LDAP users and groups locally
+    to do authorization.
+  * Authorization via local Role.
+  * Keycloak has a local user-database allowing to setup Role for authorization.
+  * Web UI
+  * Built-in Event logs for audit/troubleshooting.
+  * Realms allows admin to create isolated OIDC virtual context (sort of "namespaces").
+  * Custom Login Flows.
+  * Two FA Auth - TOTP via Google Authenticator or Free OTP.
+  * JavaScript Client adapters.
+  * Kerberos bridge
+
+* Dex is an simple to use and setup OIDC provider while Keycloak is
+  an Identity and Access Management service requiring an SQL Database.
+* Keycloak can fully replace existing Identity providers.
+
+[[02_doc_has.comparative}]]
+[[}]]
+
+* OpenID ID Tokens are dex's primary feature. They are signed by dex
+  and returned as part of the OAuth2 response that attest to the end 
+  user's identity. 
+* ID Tokens contains standard claims assert which client app logged
+  the user in, when the token expires, and the identity of the user.
+  ```
+  {
+    "iss"    : "http://127.0.0.1:5556/dex",
+    "sub"    : "CgcyMzQyNzQ5EgZnaXRodWI",
+    "aud"    : "example-app",
+    "exp"    : 1492882042,
+    "iat"    : 1492795642,
+    "at_hash": "bi96gOXZShvlWYtal9Eqiw",
+    "email"  : "jane.doe@coreos.com",
+    "email_verified": true,
+    "groups": [ "admins", "developers" ],
+    "name": "Jane Doe"
+  }
+  ```
+* Out of the box next systems can consume OpenID Connect ID Tokens issued
+  /signed by dex:
+  * Kubernetes
+  * AWS STS
+
+[[{cloud.kubernetes]]
+* Kubernetes and Dex
+* Dex runs natively on top of any Kubernetes cluster using
+  a Custom Resource Definitions and can drive API server
+  authentication through the OpenID Connect Connector ("plugin").
+* **Clients, such as custom apps, kubernetes-dashboard, kubectl,
+  can act on behalf of users who can login to the cluster
+  through any identity provider dex supports.**
+
+    More docs for running dex as a Kubernetes authenticator can be found here.
+    You can find more about companies and projects, which uses dex, here.
+[[}]]
+
+## Dex Connectors
+* Connectors or protocol limitations limit also dex from issuing refresh tokens
+  or group membership claims. In particular, SAML doesn't provide a non-interactive 
+  way to refresh assertions, so refresh-tokens are not issued, required by 
+  offline access by apps like kubectl.
+
+* Current list of supported connectors: (as of 2023-12)
+  ```
+  Name         ┌─·················· refresh-token support 
+               ·   ┌─·············· groups   claimSupport?    
+               ·   ·   ┌─·········· preferred_username Claim Support
+               ·   ·   ·     ┌─···· status          
+               v   v   v     v      notes
+             --------------------------------------
+  LDAP        yes yes yes  stable     
+  GitHub      yes yes yes  stable     
+  SAML        2.0  no yes      no   stable     
+                                    WARNING: Unmaintained and likely
+                                    vulnerable to auth bypasses (#1884)
+  GitLab      yes yes yes    beta
+  OpenID      yes yes yes    beta   Includes Salesforce, Azure, etc.
+  Connect
+                              
+  OAuth 2.0    no yes yes   alpha     
+  Google      yes yes yes   alpha    
+  LinkedIn    yes  no  no    beta 
+  Microsoft   yes yes  no    beta 
+  AuthProxy    no yes  no   alpha   Auth.proxies such as 
+                                    Apache2 mod_auth, ...
+  Bitbucket   yes yes  no   alpha     
+     Cloud
+  OpenShift   yes yes  no   alpha     
+  Atlassian   yes yes yes    beta  preferred_username claim must be
+      Crowd                        configured through config
+  Gitea       yes  no yes    beta     
+  OpenStack   yes yes  no   alpha     
+  Keystone
+  ┌────────────────────────┴─────┘     
+  Beta : tested and unlikely to incompatible changes.
+  Alpha: may be untested by core maintainers and likely to change.
+ ```
+
+# Writing apps That Use Dex
+* REF: <https://dexidp.io/docs/using-dex/>
+[[}]]
+
+App interacting with dex falls in two categories:
+1.  Apps directly requesting OpenID Connect ID tokens to authenticate end users.
+   (Must be web based standard OAuth2 clients).<br/>
+   
+   1. PRESETUP. Is is registered to dex like:
+      ```
+      staticClients:
+      - id: example-app
+        secret: example-app-secret
+        name: 'Example App'
+        # Where the app will be running.
+        redirectURIs:
+        - 'http://127.0.0.1:5555/callback'
+      ```
+   1. User visits client app.
+   1. Client app redirects user to dex with an OAuth2 request (
+      including an 'state',  State tokens, arbitrary string 
+      returned as in in response use to enhance security)
+   1. Dex determines user’s identity.
+   1. Dex redirects user to client with a code.
+   1. Client exchanges code with dex for an id_token.
+  
+   Example app: <https://github.com/dexidp/dex/tree/master/examples/example-app>
+   making use of packages: 
+   ```
+   github.com/coreos/go-oidc
+   golang.org/x/oauth2 
+   ```
+2.  Apps consuming ID tokens from other apps as credentials.
+   (Needs to verify that a client app is acting on behalf of a user).
+   This lets another service handle OAuth2-OpenID flows to obtain the 
+   ID token retrieved from dex to act on the end user's behalf.
+   For example the Kubernetes API server is such App consuming from
+   kubectl/....<br/>
+    The verifier app validates the ID token's signature, obtained by
+   a third app. The verifier only trusts the example app's client.
+    This ensures the example app is the one who's using the ID token,
+   and not another, untrusted client.

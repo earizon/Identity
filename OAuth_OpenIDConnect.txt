@@ -41,7 +41,6 @@
   │  │  ┌───────────────────┘        XML-based standards such as SAML.
   │  │  │
   │  │  SIGNATURE
-  │  │  Base64URL ( signed [Base64URL-encoded HEADER, Base64URL_encoded PAYLOAD] )
   │  │             └ (with shared_secret or priv.key)
   │  │               (Using signature algorithm of HEADER)
   │  PAYLOAD
@@ -49,9 +48,21 @@
   │
   │  - types of claims:
   │    - registered : non mandatory but recommended for interoperability:
-  │       "iss" (issuer)           "sub" (subject)     "jti" (JWT ID) Claim
-  │       "exp" (expiration time)  "aud" (audience)
-  │       "iat" (Issued At)        "nbf" (Not Before)
+  │       "jti" (JWT ID) Claim
+  │       "iss" (issuer)           
+  │       "exp" (expiration time)  
+  │       "iat" (Issued At)        
+  │       "sub" (subject)
+  │       "aud" (aud)ience of the token, i.e., the "web app" that is meant to 
+  │             be the final recipient of the token. eg.: In the case of an
+  │             ID token, its value is the client ID of the application that
+  │             should consume the token.
+  │       "nbf" (Not Before)
+  │       
+  │       
+  │       
+  │       
+  │       
   │
   │    - public     : Defined at will. To avoid collisions they should be defined
   │                   in the IANA JSON Web Token Registry or be defined as a URI
@@ -527,7 +538,12 @@ app is done through two degrees of indirection.
 provides a JWT authorization token allowing users to acess 
 services/resources, **In OpenID, the Identity Provider adds claims 
 about a subject** to the JWT token in order to provide authentication 
-(who is the user plus basic profile information)
+(who is the user plus basic profile information). This JWT token
+is defined by OpenID as the **ID Token**.
+
+When compared:
+* An ID token is an artifact that proves that the user has been authenticated.
+
 
 * over a billion OpenID-enabled accounts on the Internet (2016)
 * Google, WordPress, Yahoo, PayPal use OpenId to authenticate users.
@@ -641,4 +657,10 @@ Summarized:
   └────────────────┴────────────┴─────────────┴─────────────────┘
   ```
 
+## [[{PM.TODO.now]]
+* <https://openid.net/specs/openid-connect-core-1_0.html>
+
+* OAuth 2.0 Threat Model and Security Considerations
+  <https://tools.ietf.org/html/rfc6819>
+[[}]]
 [[}]]

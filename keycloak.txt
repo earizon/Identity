@@ -1,7 +1,7 @@
-# keycloak modules:
+# keycloak modules
 
-  https://developers.redhat.com/blog/2019/12/11/keycloak-core-concepts-of-open-source-identity-and-access-management#wrapping_up
-
+* REF:<https://developers.redhat.com/blog/2019/12/11/keycloak-core-concepts-of-open-source-identity-and-access-management#wrapping_up>
+  ```
   ┌─ Keycloak ────────────────────────────────────────────────┐
   │  ┌─ Realm: master ──────────────────┐                     │
   │  │ A realm is sort-of "namespace"   │                     │
@@ -22,10 +22,11 @@
   └─^───────────┴─────┴─────────┴─^────────────┴──────────────┘
     ├─ OAuth 2.0, OpenID Connect, SAML
     └─ Github, Twitter, Google, Facebook, ...
+  ```
 
 # App Integration Schema:
 
-
+  ```
   Android/iOS ···┐
   SDK            ·                ┌ Realm: external─apps ─────
                  ·   Keycloak     │ └ Client ID: "myapp01"
@@ -33,8 +34,9 @@
                  ·                │   └ Resource Endpoint
                  ·                └───────────────────────────
   Backend Srv ···┘
+  ```
 
-
+  ```
   $ docker run -d \
   -e KEYCLOAK_USER=.. -e KEYCLOAK_PASSWORD=... \
   -v ./keycloak/realm-config.json:/tmp/keycloak/importedconfig/realm-export.json
@@ -45,22 +47,25 @@
   -Dkeycloak.migration.provider=singleFile
   -Dkeycloak.migration.file=/tmp/keycloak/importedconfig/realm-export.json"
   -Dkeycloak.migration.strategy=OVERWRITE_EXISTING"
+  ```
 
 # Integrating apps with Keycloak:
-  1) Create a realm.
-  2) Create a Keycloak client-configuration indicating:
-     - protocol to use  : OpenID, SAML, ...
-     - REST endpoint
-     - Redirect URI: Where to redirect users when authentication is granted.
-  3) Provide to client apps the correct connection to Keycloak realm, including:
-     - clientId (i.e.,hello-world-app)
-     - realm (i.e.,external-apps)
-     - Keycloak server's URL.
 
-# "native" integrartion with JS applications, Spring Boot, Quarkus. [[{01_PM.TODO}]]
+1) Create a realm.
+2) Create a Keycloak client-configuration indicating:
+   * protocol to use  : OpenID, SAML, ...
+   * REST endpoint
+   * Redirect URI: Where to redirect users when authentication is granted.
+3) Provide to client apps the correct connection to Keycloak realm, including:
+   * clientId (i.e.,hello-world-app)
+   * realm (i.e.,external-apps)
+   * Keycloak server's URL.
 
-Example Realm JSON config:
-  (C&P from book "Cloud Native Spring in Action" )
+[[{01_PM.TODO}]]
+# "native" integrartion with JS applications, Spring Boot, Quarkus. 
+
+Example Realm JSON config: (C&P from book "Cloud Native Spring in Action" )
+  ```
   {
     "id" : "6fc4c42b-303d-49ba-83ff-3d2ba634730f",
     "realm" : "PolarBookshop",
@@ -1861,3 +1866,4 @@ Example Realm JSON config:
       "policies" : [ ]
     }
   }
+  ```
