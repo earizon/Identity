@@ -353,49 +353,51 @@ app is done through two degrees of indirection.
   charge of this.
 
   ```
-                                                    ┌────────────────────┐
-  ┌────────────┐          ┌──────────┐              │OAuth Client        │
-  │OAuth Server│          │Remote App│              │(Browser/Mobile App)│
-  └─────┬──────┘          └────┬─────┘              └────────────────────┘
-        │                      │<··························· 1) GET ... ─┤
-        │                      │   2) signed bearer                      │
-        │                      │·┐    access token                       │
-        │                      │<┘    not found                          │
-        │                      ├ 3) redirect to OAuth2 Server ···········>
-        │                      │                                         │
-        │ <······· 4)  GET oauth2/token?client_id=...&client_secret=... ─┤
-        │                      │                                         │
-        │ "POPUP"                                                        │
-        │ ¿user credentials?  ¿scope/s granted?                          │
-        ├································································>
-        │                      │                                         │
-        │<······················································ 5) POST ┤
-        │ {                                                              │
-        │   grant_type   : "password"          ┐ OAuth data              │
-        │   client_id    : ${APP.clientID}     │ identifying the         │
-        │   client_secret: ${APP.secret}       │ pre-registered          │
-        │   scope        : ${SPACE_SEP_SCOPES} ┘ Application/Service     │
-        │                  (OAuth server can further restrict the set    │
-        │                   according to company policies)               │
-        │   username       ${username}         ┐ User's credentials      │
-        │   password       ${password}         ┘                         │
-        │ }                                                              │
-        │       (OAuth server can also require extra MFA/biometric       │
-        │        credentials in addition to the username and pass)       │
-        │·┐ 6) Check user/pass │                                         │
-        │<┘ or/and biometrics  │                                         │
-        │   or/and ...         │                                         │
-        ├· 7) JSON object with with signed tokens ·······················>
-        │  { 
-        │    token_type   : "Bearer"                                     │
-        │    expires_in   : ...                                          │
-        │    access_token : ...  <·· Attach to App's requests            │
-        │    refresh_token: ...  <·· used to refresh tokens              │
-        │  }                   │                                         │
-  ┌────────────┐          ┌──────────┐              ┌────────────────────┐
-  │OAuth Server│          │Remote App│              │OAuth Client        │
-  └────────────┘          └──────────┘              │(Browser/Mobile App)│
-                                                    └────────────────────┘
+  |                                              ┌──────────────────┐
+  |┌──────┐           ┌──────────┐               │OAuth Client      │
+  |│OAuth │           │Remote App│               │(REST API/Browser/│
+  ││Server│           └────┬─────┘               │ Mobile App)      │
+  |└┬─────┘                │                     └────────────────┬─┘
+  |└┬─────┘                │<··························· 1) GET ..┤
+  | │                      │   2) signed bearer                   │
+  | │                      │·┐    access token                    │
+  | │                      │<┘    not found                       │
+  | │                      ├ 3) redirect to OAuth2 Server ········>
+  | │                      │                                      │
+  | │ <······· 4)  GET oauth2/token?client_id=...&client_secret=..┤
+  | │                      │                                      │
+  | │ "POPUP"                                                     │
+  | │ ¿user credentials?  ¿scope/s granted?                       │
+  | ├·····························································>
+  | │                      │                                      │
+  | │<····················································5) POST ┤
+  | │ {                                                           │
+  | │   grant_type   : "password"          ┐ OAuth data           │
+  | │   client_id    : ${APP.clientID}     │ identifying the      │
+  | │   client_secret: ${APP.secret}       │ pre-registered       │
+  | │   scope        : ${SPACE_SEP_SCOPES} ┘ Application/Service  │
+  | │                  (OAuth server can further restrict the set │
+  | │                   according to company policies)            │
+  | │   username       ${username}         ┐ User's credentials   │
+  | │   password       ${password}         ┘                      │
+  | │ }                                                           │
+  | │       (OAuth server can also require extra MFA/biometric    │
+  | │        credentials in addition to the username and pass)    │
+  | │·┐ 6) Check user/pass │                                      │
+  | │<┘ or/and biometrics  │                                      │
+  | │   or/and ...         │                                      │
+  | ├· 7) JSON object with with signed tokens ····················>
+  | │  { 
+  | │    token_type   : "Bearer"                                  │
+  | │    expires_in   : ...                                       │
+  | │    access_token : ...  <·· Attach to App's requests         │
+  | │    refresh_token: ...  <·· used to refresh tokens           │
+  | │  }                   │                                      │
+  │┌────────────┐          ┌──────────┐         ┌─────────────────┴┐
+  |│OAuth Server│          │Remote App│         │OAuth Client      │
+  |└────────────┘          └──────────┘         │(REST API/Browser/│
+  |                                             │ Mobile App)      │
+  |                                             └──────────────────┘
   ```
 
 ## OAuth client credentials grant (M2M)
@@ -403,32 +405,32 @@ app is done through two degrees of indirection.
 * simplest oauth 2.0 grants machine-to-machie Authentication
   where an specific user's permission to access data is NOT required.
   ```
-  client -> OAuth Server: POST
-                          (grant_type, client_id, client_secret, scope)
-  OAuth Server -> client: {
-                            token_type = "bearer"
-                            expires_in
-                            access_token (Signed JWT token)
-                          }
-  client -> Service     : Request Using access_token
-  Service -> Service    : Validate signature in access_token
+  | client -> OAuth Server: POST
+  |                         (grant_type, client_id, client_secret, scope)
+  | OAuth Server -> client: {
+  |                           token_type = "bearer"
+  |                           expires_in
+  |                           access_token (Signed JWT token)
+  |                         }
+  | client -> Service     : Request Using access_token
+  | Service -> Service    : Validate signature in access_token
   ```
 
 ## REFRESH TOKEN GRANT [[{]]
 * (section1.5)
   ```
-  participant "OAuth Server"  as OAS
-  client -> OAS: POST
-                 - grant_type
-                 - refresh_token
-                 - client_id
-                 - client_secret
-                 - scope
-  OAS -> client: JSON with
-                 - token_type
-                 - expires_in
-                 - access_token
-                 - refresh_token
+  | participant "OAuth Server"  as OAS
+  | client -> OAS: POST
+  |                - grant_type
+  |                - refresh_token
+  |                - client_id
+  |                - client_secret
+  |                - scope
+  | OAS -> client: JSON with
+  |                - token_type
+  |                - expires_in
+  |                - access_token
+  |                - refresh_token
   ```
 [[}]]
 
@@ -439,50 +441,50 @@ app is done through two degrees of indirection.
 
 1. STEP 1: Authenticating user and getting Auth. code
   ```
-  participant "OAuth Server"  as OAS
-  participant "3rd party App" as App3rd
-
-  participant "Web/Native App" as browser
-
-  App3rd party registered with OAuthServer obtaining App3rd_client.id
-
-  browser -> App3rd : req resource
-  App3rd -> browser : NO access_token found in request. Redirect
-  browser -> OAS    : redirect to https://OAuthServer/oauth2/token
-                     ?response_type=${value_code}
-                     &client_id=${App3rd_client.id}
-                     &redirect_uri=${REDITECT_URI} <·· (Optional if pre-registered URI)
-                     &scope=${SPACE_DELIMITED_SCOPES}
-                     &state=${OPTIONAL_STATE}
-                            └──────┬────────┘
-                            highly recommended to avoid "mixing"
-                            different browser's session on callback
-  browser <- OAS    : Credentials?
-  browser -> OAS    : "Credentials" proof (user/pass and/or MFA and/or ...)
-  OAS     -> OAS    : validate or abort
-  OAS     -> browser: Redirect to ${REDITECT_URI}
-                      ?code=${AUTHORIZATION_CODE}
-                      ?state=${COPY_OF_INPUT_STATE_IN_REQUEST}
-  browser -> App3rd : ${REDITECT_URI}?code=....&state=...
-  App3rd -> App3rd  : check Initial State = Received state
-                      (Avoid mixing different user sessions)
-                      Associate code to user's session
+  | participant "OAuth Server"  as OAS
+  | participant "3rd party App" as App3rd
+  | 
+  | participant "Web/Native App" as browser
+  | 
+  | App3rd party registered with OAuthServer obtaining App3rd_client.id
+  | 
+  | browser -> App3rd : req resource
+  | App3rd -> browser : NO access_token found in request. Redirect
+  | browser -> OAS    : redirect to https://OAuthServer/oauth2/token
+  |                    ?response_type=${value_code}
+  |                    &client_id=${App3rd_client.id}
+  |                    &redirect_uri=${REDITECT_URI} <·· (Optional if pre-registered URI)
+  |                    &scope=${SPACE_DELIMITED_SCOPES}
+  |                    &state=${OPTIONAL_STATE}
+  |                           └──────┬────────┘
+  |                           highly recommended to avoid "mixing"
+  |                           different browser's session on callback
+  | browser <- OAS    : Credentials?
+  | browser -> OAS    : "Credentials" proof (user/pass and/or MFA and/or ...)
+  | OAS     -> OAS    : validate or abort
+  | OAS     -> browser: Redirect to ${REDITECT_URI}
+  |                     ?code=${AUTHORIZATION_CODE}
+  |                     ?state=${COPY_OF_INPUT_STATE_IN_REQUEST}
+  | browser -> App3rd : ${REDITECT_URI}?code=....&state=...
+  | App3rd -> App3rd  : check Initial State = Received state
+  |                     (Avoid mixing different user sessions)
+  |                     Associate code to user's session
   ```
 
 2. STEP 2: Using `code` to get Access Token
   ```
-  App3rd -> OAS: POST
-                 grant_type="authorization_code"
-                 client_id=${App3rd_client.id}
-                 client_secret=...
-                 redirect_uri=${ORIGINAL REDIRECT URI}
-                 code=${CODE}
-  OAS -> App3rd: JSON object
-                 token_type     usually "Bearer"
-                 expires_in     access token TTL(Integer)
-                 access_token   the access token itself
-                 refresh_token  used refresh on expiration
-                                time
+  | App3rd -> OAS: POST
+  |                grant_type="authorization_code"
+  |                client_id=${App3rd_client.id}
+  |                client_secret=...
+  |                redirect_uri=${ORIGINAL REDIRECT URI}
+  |                code=${CODE}
+  | OAS -> App3rd: JSON object
+  |                token_type     usually "Bearer"
+  |                expires_in     access token TTL(Integer)
+  |                access_token   the access token itself
+  |                refresh_token  used refresh on expiration
+  |                               time
   ```
 [[}]]
 
@@ -499,31 +501,31 @@ app is done through two degrees of indirection.
      server returns an access token.
 
    ```
-   user → client: request access
-   client → user: redirect to OAS
-                  -----------------------
-                  URL req. param:
-                  response_type     with the value token
-                  client_id         with the client identifier
-                  redirect_uri      Optional. Def.to pre-registered one
-                  scope             a space delimited list of scopes
-                  state             (optional but highly recommended)
-   user → OAS: ...
-   OAS → OAS: checks...
-   user ← OAS: request Credentials
-   user → OAS: login with "credentials" proofs
-                       
-   user ← OAS: redirect to client
-                       -----------------------
-                       token_type    "Bearer"
-                       expires_in    TTL
-                       access_token  the access token itself
-                       state         must be compared in client
-                                     with the original value
-                       ^^^^^^^^^^^^
-                       this grant does NOT return
-                       refresh token because the browser
-                       has no means of keeping it private
+   | user → client: request access
+   | client → user: redirect to OAS
+   |                -----------------------
+   |                URL req. param:
+   |                response_type     with the value token
+   |                client_id         with the client identifier
+   |                redirect_uri      Optional. Def.to pre-registered one
+   |                scope             a space delimited list of scopes
+   |                state             (optional but highly recommended)
+   | user → OAS: ...
+   | OAS → OAS: checks...
+   | user ← OAS: request Credentials
+   | user → OAS: login with "credentials" proofs
+   |                     
+   | user ← OAS: redirect to client
+   |                     -----------------------
+   |                     token_type    "Bearer"
+   |                     expires_in    TTL
+   |                     access_token  the access token itself
+   |                     state         must be compared in client
+   |                                   with the original value
+   |                     ^^^^^^^^^^^^
+   |                     this grant does NOT return
+   |                     refresh token because the browser
+   |                     has no means of keeping it private
    ```
 [[}]]
 
@@ -556,27 +558,27 @@ When compared:
 
 * OpenID FLOW:
   ```
-  user → id_provider01: request OpenID account
-  user ← id_provider01: OpenID account
-                        ^^^^^^^^^^^^^^
-                        technically it's a URL
-                        (e.g. alice2016.myIDprovider.org)
+  | user → id_provider01: request OpenID account
+  | user ← id_provider01: OpenID account
+  |                       ^^^^^^^^^^^^^^
+  |                       technically it's a URL
+  |                       (e.g. alice2016.myIDprovider.org)
 
-  user → web_site login_screen: Select "sign with id_provider01"
-         (relying party)
-  web_site login_screen → id_provider01: request association handle
-  web_site login_screen ← id_provider01: association handle
-  user ← web_site login_screen: redirect to id_provider01 login page
-  user → id_provider01: enter OpenID account + credentials (pass,...)
-  user ← id_provider01: auth.token + url_redirect o web_site
-                        ^^^^^^^^^^
-                        signed claim statying that id_provider01
-                        believes user is actually user
-  user → web_site url : auth.token
-  web_site url → web_site url : Check auth.token is signed by trusted
-                                id_provider01
-  web_site url → web_site url : Create session for user
-  user ←→ web_site url : --- app session ---
+  | user → web_site login_screen: Select "sign with id_provider01"
+  |        (relying party)
+  | web_site login_screen → id_provider01: request association handle
+  | web_site login_screen ← id_provider01: association handle
+  | user ← web_site login_screen: redirect to id_provider01 login page
+  | user → id_provider01: enter OpenID account + credentials (pass,...)
+  | user ← id_provider01: auth.token + url_redirect o web_site
+  |                       ^^^^^^^^^^
+  |                       signed claim statying that id_provider01
+  |                       believes user is actually user
+  | user → web_site url : auth.token
+  | web_site url → web_site url : Check auth.token is signed by trusted
+  |                               id_provider01
+  | web_site url → web_site url : Create session for user
+  | user ←→ web_site url : --- app session ---
   ```
 [[}]]
 
@@ -629,24 +631,24 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 * The RP can send a request with the Access Token to the UserInfo Endpoint.
 * The UserInfo Endpoint returns Claims about the End-User.
   ```
-  OpenID Connect protocol Summary:
-  Relaying                      OpenID  <·· In Self Issued OpenID, the OP can be a 
-  Party                    provider(OP)     "wallet"
-  +                                   +  
-  |                                   |
-  |---------(1) AuthN Request-------->|   End-User
-  |                                   |          +
-  |                                   |          |
-  |                                   |<--(2) -->|
-  |                                   |   Authen.+
-  |                                   | + Authoz.
-  |<--------(3) AuthN Response--------|
-  | (ID Token + opt. Access Token)    |
-  |                                   |
-  |-(4)(Opt)UserInfo Req(+acc.Token)->|
-  |<-----------(5) UserInfo Response -|
-  |                                   |
-  +                                   +
+  | OpenID Connect protocol Summary:
+  | Relaying                      OpenID  <·· In Self Issued OpenID, the OP can be a 
+  | Party                    provider(OP)     "wallet"
+  | +                                   +  
+  | |                                   |
+  | |---------(1) AuthN Request-------->|   End-User
+  | |                                   |          +
+  | |                                   |          |
+  | |                                   |<--(2) -->|
+  | |                                   |   Authen.+
+  | |                                   | + Authoz.
+  | |<--------(3) AuthN Response--------|
+  | | (ID Token + opt. Access Token)    |
+  | |                                   |
+  | |-(4)(Opt)UserInfo Req(+acc.Token)->|
+  | |<-----------(5) UserInfo Response -|
+  | |                                   |
+  | +                                   +
   ```
 
 ## ID Token Claims: 
@@ -692,16 +694,16 @@ The following Claims are used within the ID Token for all OAuth 2.0 flows used b
   Registration parameters, per Section 10.**
 * Normative example of the set of JWT Claim Set in ID Token:
   ```
-  {
-   "iss": "https://server.example.com",
-   "sub": "24400320",
-   "aud": "s6BhdRkqt3",
-   "nonce": "n-0S6_WzA2Mj",
-   "exp": 1311281970,
-   "iat": 1311280970,
-   "auth_time": 1311280969,
-   "acr": "urn:mace:incommon:iap:silver"
-  }
+  | {
+  |  "iss": "https://server.example.com",
+  |  "sub": "24400320",
+  |  "aud": "s6BhdRkqt3",
+  |  "nonce": "n-0S6_WzA2Mj",
+  |  "exp": 1311281970,
+  |  "iat": 1311280970,
+  |  "auth_time": 1311280969,
+  |  "acr": "urn:mace:incommon:iap:silver"
+  | }
   ```
 3.  Authentication
 
@@ -711,40 +713,40 @@ The following Claims are used within the ID Token for all OAuth 2.0 flows used b
   * Hybrid Flow   (using other Response Type values defined in OAuth 2.0 Multiple Response Type Encoding Practices).
   The flows determine how the ID Token and Access Token are returned to the Client.
 Flow comparative:
-```
-              Hybrid Flow  ··········─┐
-            Implicit Flow  ······─┐   ·
-  Authorization Code Flow  ···┐   ·   ·
-                              ·   ·   ·
-  Property                    v   v   v                         
-  All tokens returned ····· │no │yes│no
-     from AuthoEndpoint     │   │   │
-  All tokens returned ····· │yes│no │no
-      from Token Endpoint   │   │   │
-  Tokens not revealed  ···· │yes│no │no  [[{doc_has.key-point}]]
-      to User Agent         │   │   │
-      (browser)!!!          │   │   │
-  Client can be ··········· │yes│no │yes
-      authenticated         │yes│no │yes
-  Refresh Token possible .. │yes│no │yes
-  Communication in ········ │no │yes│no
-     one round trip         │   │   │
-  Most communication ...... │yes│no │Y/N
-  server-to-server          │   │   │      
-
-  **The flow used is determined by 
-    response_type value contained
-    in the Authorization Request**
-    (sent by the OAuth client)
-  "response_type"      │ Flow
-  code                 │ Auth. Code Flow
-  id_token             │ Implicit Flow
-  id_token token       │ Implicit Flow
-~~value~~ ¹            │ Implicit Flow
-  code id_token        │ Hybrid Flow
-  code token           │ Hybrid Flow
-  code id_token token  │ Hybrid Flow
-```
+  ```
+  |              Hybrid Flow  ··········─┐
+  |            Implicit Flow  ······─┐   ·
+  |  Authorization Code Flow  ···┐   ·   ·
+  |                              ·   ·   ·
+  |  Property                    v   v   v                         
+  |  All tokens returned ····· │no │yes│no
+  |     from AuthoEndpoint     │   │   │
+  |  All tokens returned ····· │yes│no │no
+  |      from Token Endpoint   │   │   │
+  |  Tokens not revealed  ···· │yes│no │no  [[{doc_has.key-point}]]
+  |      to User Agent         │   │   │
+  |      (browser)!!!          │   │   │
+  |  Client can be ··········· │yes│no │yes
+  |      authenticated         │yes│no │yes
+  |  Refresh Token possible .. │yes│no │yes
+  |  Communication in ········ │no │yes│no
+  |     one round trip         │   │   │
+  |  Most communication ...... │yes│no │Y/N
+  |  server-to-server          │   │   │      
+  |
+  |  **The flow used is determined by 
+  |    response_type value contained
+  |    in the Authorization Request**
+  |    (sent by the OAuth client)
+  |  "response_type"      │ Flow
+  |  code                 │ Auth. Code Flow
+  |  id_token             │ Implicit Flow
+  |  id_token token       │ Implicit Flow
+  |~~value~~ ¹            │ Implicit Flow
+  |  code id_token        │ Hybrid Flow
+  |  code token           │ Hybrid Flow
+  |  code id_token token  │ Hybrid Flow
+  ```
 
 * ¹ Defined in OAuth 2.0, not used in OpenID Connect,
   since no ID Token would be returned.
@@ -760,78 +762,78 @@ Flow comparative:
 
 
   ```     
-  scope         : REQUIRED, openid is mandatory, others (profile, email, phone) are optional.
-                   (If response_type is id_token, profile email phone must be included to be
-                   returned in the ID token).
-6 response_type := authorization flow to be used, including parameters returned from the endpoints used.
-  client_id     : REQUIRED. OAuth 2.0 Client Identifier valid at the Authorization Server. 
-  redirect_uri  : REQUIRED. Redirection URI (https¹ scheme)to which the response will be sent if 
-                  required by the flow. **It MUST exactly match one of the Redirection URI values 
-                  for the Client pre-registered at the OpenID Provider**
-                  ¹http can be used provided that the Client Type is confidential)
-                   native apps can use an alternative scheme for deep-links callbacks.
-  state         : RECOMMENDED. Opaque value used to maintain state between the request and the callback. 
-                  Typically, Cross-Site Request Forgery (CSRF, XSRF) mitigation is done by  [[{PM.TODO}]]
-                  cryptographically binding the value of this parameter with a browser cookie. 
-  response_mode : OPTIONAL. (OpenID extension), Informs to the 
-                  Authorization Server of the mechanism to be used for returning 
-                  parameters from the Authorization Endpoint. This use of this 
-                  parameter is NOT RECOMMENDED when the Response Mode that would be 
-                  requested is the default mode specified for the Response Type. 
-  nonce         : OPTIONAL. (OpenID extension?). 
-  display       : OPTIONAL. ASCII string value that specifies how the Authorization Server displays 
-                  the authentication and consent user interface pages to the End-User. The defined 
-                  values are:
-                  page:  Auth.Server SHOULD display Auth. and Consent UI consistent with a full
-                        User Agent page view. (Default mode)
-                  popup:
-                  touch: 
-                  wap:  UI consistent with "feature phone" type display. 
-  prompt        : OPTIONAL. Space delimited, case sensitive list of ASCII string values that specifies
-                  whether the Authorization Server prompts the End-User for reauthentication and consent.
-                  The defined values are:
-                  none: Auth.Server MUST NOT display any authentication or consent user interface pages.
-                        An error is returned if an End-User is not already authenticated or the Client 
-                        does not have pre-configured consent for the requested Claims or does not fulfill
-                        other conditions for processing the request. 
-                        error code will typically be "login_required", ... or another code defined in 
-                        Section 3.1.2.6. 
-                  login: Authorization Server SHOULD prompt the End-User for reauthentication.
-                  consent: The Authorization Server SHOULD prompt the End-User for consent before 
-                           returning information to the Client. or return an error.
-                  select_account: Auth.Server SHOULD prompt the End-User to select a user account.
-                           Use-case:End-User has multiple accounts at the Auth.Server and they might
-                           have current sessions for.
-                  **The prompt parameter can be used by the Client to make sure that 
-                  the End-User is still present for the current session or to bring 
-                  attention to the request**
-    max_age     : OPTIONAL. Max.Authentication Age (seconds) since the last time the End-User was actively
-                  authenticated by the Aut.Server/OP. OP MUST attempt to actively once passed.
-    ui_locales  : OPTIONAL. space-separated list of BCP47 [RFC5646] language tag values, ordered by preference.
-                  ex: "fr-CA fr en" 
-    id_token_hint: OPTIONAL. ID Token previously issued by the Auth.Server being passed as a hint about the
-                  End-User's current or past authenticated session with the Client. 
-                  If End-User identified by the ID Token is NOT Yet logged in throw error such as 
-                  login_required. 
-                  When possible, it SHOULD be present for prompt=none.
-                  Auth.Server need not be listed as an audience of the ID Token when it is used as an
-                  id_token_hint value. 
-    login_hint : OPTIONAL. Hint to the Auth.Server about the login identifier the End-User might use
-                 to log in (if necessary). It can be used by the RP, for example, if it first asks the
-                 End-User for their e-mail/phone number address. Real use is left to the OP's discretion. 
-    acr_values : OPTIONAL. Requested Authentication Context Class Reference values. Specifies the acr
-                 values that the Auth.Server is being requested to use for processing this 
-                 Authentication Request, with the values appearing in order of preference. The
-                 Authentication Context Class satisfied by the authentication performed is returned 
-                 as the acr Claim Value, as specified in Section 2. The acr Claim is requested as a
-                 Voluntary Claim by this parameter. 
-    claims     : "optional" JSON list of Claims.  Mandatory to request non-standard claims.
-                 See RFC for details. 
-                 
-
-    See Sections 3.2.2, 3.3.2, 5.2, 5.5, 6, and 7.2.1 for additional 
-    Authorization Request parameters and parameter values defined by this 
-    specification.
+  | scope         : REQUIRED, openid is mandatory, others (profile, email, phone) are optional.
+  |                  (If response_type is id_token, profile email phone must be included to be
+  |                  returned in the ID token).
+  | response_type := authorization flow to be used, including parameters returned from the endpoints used.
+  | client_id     : REQUIRED. OAuth 2.0 Client Identifier valid at the Authorization Server. 
+  | redirect_uri  : REQUIRED. Redirection URI (https¹ scheme)to which the response will be sent if 
+  |                 required by the flow. **It MUST exactly match one of the Redirection URI values 
+  |                 for the Client pre-registered at the OpenID Provider**
+  |                 ¹http can be used provided that the Client Type is confidential)
+  |                  native apps can use an alternative scheme for deep-links callbacks.
+  | state         : RECOMMENDED. Opaque value used to maintain state between the request and the callback. 
+  |                 Typically, Cross-Site Request Forgery (CSRF, XSRF) mitigation is done by  [[{PM.TODO}]]
+  |                 cryptographically binding the value of this parameter with a browser cookie. 
+  | response_mode : OPTIONAL. (OpenID extension), Informs to the 
+  |                 Authorization Server of the mechanism to be used for returning 
+  |                 parameters from the Authorization Endpoint. This use of this 
+  |                 parameter is NOT RECOMMENDED when the Response Mode that would be 
+  |                 requested is the default mode specified for the Response Type. 
+  | nonce         : OPTIONAL. (OpenID extension?). 
+  | display       : OPTIONAL. ASCII string value that specifies how the Authorization Server displays 
+  |                 the authentication and consent user interface pages to the End-User. The defined 
+  |                 values are:
+  |                 page:  Auth.Server SHOULD display Auth. and Consent UI consistent with a full
+  |                       User Agent page view. (Default mode)
+  |                 popup:
+  |                 touch: 
+  |                 wap:  UI consistent with "feature phone" type display. 
+  | prompt        : OPTIONAL. Space delimited, case sensitive list of ASCII string values that specifies
+  |                 whether the Authorization Server prompts the End-User for reauthentication and consent.
+  |                 The defined values are:
+  |                 none: Auth.Server MUST NOT display any authentication or consent user interface pages.
+  |                       An error is returned if an End-User is not already authenticated or the Client 
+  |                       does not have pre-configured consent for the requested Claims or does not fulfill
+  |                       other conditions for processing the request. 
+  |                       error code will typically be "login_required", ... or another code defined in 
+  |                       Section 3.1.2.6. 
+  |                 login: Authorization Server SHOULD prompt the End-User for reauthentication.
+  |                 consent: The Authorization Server SHOULD prompt the End-User for consent before 
+  |                          returning information to the Client. or return an error.
+  |                 select_account: Auth.Server SHOULD prompt the End-User to select a user account.
+  |                          Use-case:End-User has multiple accounts at the Auth.Server and they might
+  |                          have current sessions for.
+  |                 **The prompt parameter can be used by the Client to make sure that 
+  |                 the End-User is still present for the current session or to bring 
+  |                 attention to the request**
+  |   max_age     : OPTIONAL. Max.Authentication Age (seconds) since the last time the End-User was actively
+  |                 authenticated by the Aut.Server/OP. OP MUST attempt to actively once passed.
+  |   ui_locales  : OPTIONAL. space-separated list of BCP47 [RFC5646] language tag values, ordered by preference.
+  |                 ex: "fr-CA fr en" 
+  |   id_token_hint: OPTIONAL. ID Token previously issued by the Auth.Server being passed as a hint about the
+  |                 End-User's current or past authenticated session with the Client. 
+  |                 If End-User identified by the ID Token is NOT Yet logged in throw error such as 
+  |                 login_required. 
+  |                 When possible, it SHOULD be present for prompt=none.
+  |                 Auth.Server need not be listed as an audience of the ID Token when it is used as an
+  |                 id_token_hint value. 
+  |   login_hint : OPTIONAL. Hint to the Auth.Server about the login identifier the End-User might use
+  |                to log in (if necessary). It can be used by the RP, for example, if it first asks the
+  |                End-User for their e-mail/phone number address. Real use is left to the OP's discretion. 
+  |   acr_values : OPTIONAL. Requested Authentication Context Class Reference values. Specifies the acr
+  |                values that the Auth.Server is being requested to use for processing this 
+  |                Authentication Request, with the values appearing in order of preference. The
+  |                Authentication Context Class satisfied by the authentication performed is returned 
+  |                as the acr Claim Value, as specified in Section 2. The acr Claim is requested as a
+  |                Voluntary Claim by this parameter. 
+  |   claims     : "optional" JSON list of Claims.  Mandatory to request non-standard claims.
+  |                See RFC for details. 
+  |                
+  |
+  |   See Sections 3.2.2, 3.3.2, 5.2, 5.5, 6, and 7.2.1 for additional 
+  |   Authorization Request parameters and parameter values defined by this 
+  |   specification.
   ```
 
 * non-normative example HTTP 302 redirect response by the Client,
@@ -839,21 +841,21 @@ Flow comparative:
   the Authorization Endpoint**:
 
   ```
-  HTTP/1.1 302 Found
-  Location: https://server.example.com/authorize?
-    response_type=code
-    &scope=openid%20profile%20email
-    &client_id=s6BhdRkqt3
-    &state=af0ifjsldkj
-    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+  | HTTP/1.1 302 Found
+  | Location: https://server.example.com/authorize?
+  |   response_type=code
+  |   &scope=openid%20profile%20email
+  |   &client_id=s6BhdRkqt3
+  |   &state=af0ifjsldkj
+  |   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
   ```
 
 * non-normative example successful Authentication response using code flow: 
   ```
-  HTTP/1.1 302 Found
-  Location: https://client.example.org/cb?
-    code=SplxlOBeZQQYbYS6WxSbIA
-    &state=af0ifjsldkj
+  | HTTP/1.1 302 Found
+  | Location: https://client.example.org/cb?
+  |   code=SplxlOBeZQQYbYS6WxSbIA
+  |   &state=af0ifjsldkj
   ```
 
 * If End-User denies the request or the End-User authentication 
@@ -869,33 +871,30 @@ Flow comparative:
 
 * In addition to error codes defined in Section 4.1.2.1 of OAuth 2.0 [[{PM.TODO}]]
   this specification also defines the following error codes:
-  ```
-  - interaction_required: OP requires End-User interaction of some form
-  - login_required: 
-  - account_selection_required: 
-  - consent_required: 
-  - invalid_request_uri: request_uri in Auth.Request returns error or contains invalid data. 
-  - invalid_request_object: request parameter contains an invalid Request Object. 
-  - request_not_supported: OP does not support use of the request parameter defined in Section 6. 
-  - request_uri_not_supported: OP does not support use of the request_uri parameter defined in Section 6. 
-  - registration_not_supported: OP does not support use of the registration parameter defined in Section 7.2.1. 
+  * interaction_required: OP requires End-User interaction of some form
+  * `login_required`:
+  * `account_selection_required`: 
+  * `consent_required`: 
+  * `invalid_request_uri`: request_uri in Auth.Request returns error or contains invalid data. 
+  * `invalid_request_object`: request parameter contains an invalid Request Object. 
+  * `request_not_supported`: OP does not support use of the request parameter defined in Section 6. 
+  * `request_uri_not_supported`: OP does not support use of the request_uri parameter defined in Section 6. 
+  * `registration_not_supported`: OP does not support use of the registration parameter defined in Section 7.2.1. 
   ```
 * error response parameters are the following:
-  ```
-  - error: REQUIRED. Error code. 
-  - error_description: OPTIONAL. Human-readable ASCII encoded text description of the error. 
-  - error_uri: OPTIONAL. URI of a web page that includes additional information about the error. 
-  - state: OAuth 2.0 state value. REQUIRED if provided in Auth.Request.
-  ```
+  * `error`: REQUIRED. Error code. 
+  * `error_description`: OPTIONAL. Human-readable ASCII encoded text description of the error. 
+  * `error_uri`: OPTIONAL. URI of a web page that includes additional information about the error. 
+  * `state`: OAuth 2.0 state value. REQUIRED if provided in Auth.Request.
 
 * non-normative Authorization Code Flow error response:
   ```
-  HTTP/1.1 302 Found
-  Location: https://client.example.org/cb?
-    error=invalid_request
-    &error_description=
-      Unsupported%20response_type%20value
-    &state=af0ifjsldkj
+  | HTTP/1.1 302 Found
+  | Location: https://client.example.org/cb?
+  |   error=invalid_request
+  |   &error_description=
+  |     Unsupported%20response_type%20value
+  |   &state=af0ifjsldkj
   ```
 
 * Authentication Response Validation
@@ -908,13 +907,13 @@ Flow comparative:
     Form Serialization, per Section 13.2, as described in Section 4.1.3 of OAuth 2.0 [RFC6749].
   * non-normative example of Token Request:
     ```
-    POST /token HTTP/1.1
-    Host: server.example.com
-    Content-Type: application/x-www-form-urlencoded
-    Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
-  
-    grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
-      &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+    | POST /token HTTP/1.1
+    | Host: server.example.com
+    | Content-Type: application/x-www-form-urlencoded
+    | Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+    | 
+    | grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
+    |   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
     ```
 
 * 3.1.3.2. Token Request Validation by Auth.Server (from Client App)
@@ -949,48 +948,48 @@ In addition to OAuth 2.0 params the following parameters MUST be included:
   sensitive information MUST include the following HTTP response 
   header fields+values**
   ```
-  Header Name    │  Header Value
-  ───────────────┼──────────────
-  Cache-Control  │  no-store
-  Pragma         │  no-cache
+  | Header Name    │  Header Value
+  | ───────────────┼──────────────
+  | Cache-Control  │  no-store
+  | Pragma         │  no-cache
   ```
 
 * non-normative example of successful Token Response.
   ```
-  HTTP/1.1 200 OK
-  Content-Type: application/json
-  Cache-Control: no-store
-  Pragma: no-cache
-
-  {
-   "access_token": "SlAV32hkKG",
-   "token_type": "Bearer",
-   "refresh_token": "8xLOxBtZp8",
-   "expires_in": 3600,
-   "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ.ewogImlzc
-     yI6ICJodHRwOi8vc2VydmVyLmV4YW1wbGUuY29tIiwKICJzdWIiOiAiMjQ4Mjg5
-     NzYxMDAxIiwKICJhdWQiOiAiczZCaGRSa3F0MyIsCiAibm9uY2UiOiAibi0wUzZ
-     fV3pBMk1qIiwKICJleHAiOiAxMzExMjgxOTcwLAogImlhdCI6IDEzMTEyODA5Nz
-     AKfQ.ggW8hZ1EuVLuxNuuIJKX_V8a_OMXzR0EHR9R6jgdqrOOF4daGU96Sr_P6q
-     Jp6IcmD3HP99Obi1PRs-cwh3LO-p146waJ8IhehcwL7F09JdijmBqkvPeB2T9CJ
-     NqeGpe-gccMg4vfKjkM8FcGvnzZUN4_KSP0aAp1tOJ1zZwgjxqGByKHiOtX7Tpd
-     QyHE5lcMiKPXfEIQILVq0pc_E2DzL7emopWoaoZTF_m0_N0YzFC6g6EJbOEoRoS
-     K5hoDalrcvRYLSrQAZZKflyuVCyixEoV9GfNQC3_osjzw2PAithfubEEBLuVVk4
-     XUVrWOLrLl0nx7RkKU8NXNHq-rvKMzqg"
-  }
+  | HTTP/1.1 200 OK
+  | Content-Type: application/json
+  | Cache-Control: no-store
+  | Pragma: no-cache
+  | 
+  | {
+  |  "access_token": "SlAV32hkKG",
+  |  "token_type": "Bearer",
+  |  "refresh_token": "8xLOxBtZp8",
+  |  "expires_in": 3600,
+  |  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ.ewogImlzc
+  |    yI6ICJodHRwOi8vc2VydmVyLmV4YW1wbGUuY29tIiwKICJzdWIiOiAiMjQ4Mjg5
+  |    NzYxMDAxIiwKICJhdWQiOiAiczZCaGRSa3F0MyIsCiAibm9uY2UiOiAibi0wUzZ
+  |    fV3pBMk1qIiwKICJleHAiOiAxMzExMjgxOTcwLAogImlhdCI6IDEzMTEyODA5Nz
+  |    AKfQ.ggW8hZ1EuVLuxNuuIJKX_V8a_OMXzR0EHR9R6jgdqrOOF4daGU96Sr_P6q
+  |    Jp6IcmD3HP99Obi1PRs-cwh3LO-p146waJ8IhehcwL7F09JdijmBqkvPeB2T9CJ
+  |    NqeGpe-gccMg4vfKjkM8FcGvnzZUN4_KSP0aAp1tOJ1zZwgjxqGByKHiOtX7Tpd
+  |    QyHE5lcMiKPXfEIQILVq0pc_E2DzL7emopWoaoZTF_m0_N0YzFC6g6EJbOEoRoS
+  |    K5hoDalrcvRYLSrQAZZKflyuVCyixEoV9GfNQC3_osjzw2PAithfubEEBLuVVk4
+  |    XUVrWOLrLl0nx7RkKU8NXNHq-rvKMzqg"
+  | }
   ```
 
 * Token Error Response
 
   ```
-  HTTP/1.1 400 Bad Request
-  Content-Type: application/json
-  Cache-Control: no-store
-  Pragma: no-cache
-
-  {
-   "error": "invalid_request"
-  }
+  | HTTP/1.1 400 Bad Request
+  | Content-Type: application/json
+  | Cache-Control: no-store
+  | Pragma: no-cache
+  | 
+  | {
+  |  "error": "invalid_request"
+  | }
   ```
 
 * The Client MUST validate the Token Response as follows:
@@ -1053,76 +1052,76 @@ In addition to OAuth 2.0 params the following parameters MUST be included:
 * They can be requested to be returned either in the UserInfo Response, per Section 5.3.2,
   or in the ID Token, per Section 2. <!-- { -->
   ```
-  Member            |Type         |Description
-  sub               |string       |Subject Identifier for End-User at the Issuer.
-  -------------------------------------------------------------------------------------
-  name              |string       |End-User's **full** name in displayable form 
-                                  |including all name parts, possibly including titles 
-                                  |and suffixes, ordered according to the End-User's 
-                                  |locale and preferences.
-  -------------------------------------------------------------------------------------
-  given_name        |string       |first name(s) of End-User, white-space separated.
-  -------------------------------------------------------------------------------------
-  family_name       |string       |last name(s) of the End-User, white-space separated. 
-  -------------------------------------------------------------------------------------
-  middle_name       |string       |Middle name(s) of the End-User white-space separated. 
-  -------------------------------------------------------------------------------------
-  nickname          |string       |Casual name of the End-User
-  -------------------------------------------------------------------------------------
-  preferred_username|string       |Shorthand name by which the End-User wishes to be
-                                  |referred to at the RP, such as janedoe or j.doe.
-                                  |value MAY be any valid JSON string including special
-                                  |characters such as @, /, or whitespace. RP MUST NOT
-                                  |rely upon this value being unique.
-  -------------------------------------------------------------------------------------
-  profile           |string       |URL of the End-User's profile page.
-  -------------------------------------------------------------------------------------
-  picture           |string       |URL of the End-User's profile picture. URL MUST refer
-                                  |to an (PNG, JPEG, ...) image file, rather than to a 
-                                  | Web page containing an image.
-  -------------------------------------------------------------------------------------
-  website           |string       |URL of the End-User's Web page or blog.
-  -------------------------------------------------------------------------------------
-  email             |string       |End-User's preferred e-mail address. 
-                                  |RP MUST NOT rely upon this value being unique.
-  -------------------------------------------------------------------------------------
-  email_verified    |boolean      |(verified by Auth.Provider)
-  -------------------------------------------------------------------------------------
-  gender            |string       |:= female | male | "other values" MAY be used 
-  -------------------------------------------------------------------------------------
-  birthdate         |string       |YYYY-MM-DD format. Year MAY be 0000 to omit it. 
-                                  |YYYY       format, avoiding MM-DD
-  -------------------------------------------------------------------------------------
-  zoneinfo          |string       |String from zoneinfo time zone database. Europe/Paris,...
-  -------------------------------------------------------------------------------------
-  locale            |string       |BCP47/RFC5646 language tag, ex: en_US;
-  -------------------------------------------------------------------------------------
-  phone_number      |string       |E.164 is the RECOMMENDED format.Ex: +1 (425) 555-1212,
-                                  | +56 (2) 687 2400, +1 (604) 555-1234;ext=5678
-  -------------------------------------------------------------------------------------
-  phone_number_verified |boolean  |(verified by Auth.Provider)
-  -------------------------------------------------------------------------------------
-  address           |JSON object  |preferred postal address. value is a JSON [RFC4627] 
-                                  |structure containing some|all members defined in Section 5.1.1.
-  -------------------------------------------------------------------------------------
-  updated_at        |number       |JSON number of seconds since 1970-01-01T0:0:0Z measured in UTC
-  -------------------------------------------------------------------------------------
+  | Member            |Type         |Description
+  | sub               |string       |Subject Identifier for End-User at the Issuer.
+  | -------------------------------------------------------------------------------------
+  | name              |string       |End-User's **full** name in displayable form 
+  |                                 |including all name parts, possibly including titles 
+  |                                 |and suffixes, ordered according to the End-User's 
+  |                                 |locale and preferences.
+  | -------------------------------------------------------------------------------------
+  | given_name        |string       |first name(s) of End-User, white-space separated.
+  | -------------------------------------------------------------------------------------
+  | family_name       |string       |last name(s) of the End-User, white-space separated. 
+  | -------------------------------------------------------------------------------------
+  | middle_name       |string       |Middle name(s) of the End-User white-space separated. 
+  | -------------------------------------------------------------------------------------
+  | nickname          |string       |Casual name of the End-User
+  | -------------------------------------------------------------------------------------
+  | preferred_username|string       |Shorthand name by which the End-User wishes to be
+  |                                 |referred to at the RP, such as janedoe or j.doe.
+  |                                 |value MAY be any valid JSON string including special
+  |                                 |characters such as @, /, or whitespace. RP MUST NOT
+  |                                 |rely upon this value being unique.
+  | -------------------------------------------------------------------------------------
+  | profile           |string       |URL of the End-User's profile page.
+  | -------------------------------------------------------------------------------------
+  | picture           |string       |URL of the End-User's profile picture. URL MUST refer
+  |                                 |to an (PNG, JPEG, ...) image file, rather than to a 
+  |                                 | Web page containing an image.
+  | -------------------------------------------------------------------------------------
+  | website           |string       |URL of the End-User's Web page or blog.
+  | -------------------------------------------------------------------------------------
+  | email             |string       |End-User's preferred e-mail address. 
+  |                                 |RP MUST NOT rely upon this value being unique.
+  | -------------------------------------------------------------------------------------
+  | email_verified    |boolean      |(verified by Auth.Provider)
+  | -------------------------------------------------------------------------------------
+  | gender            |string       |:= female | male | "other values" MAY be used 
+  | -------------------------------------------------------------------------------------
+  | birthdate         |string       |YYYY-MM-DD format. Year MAY be 0000 to omit it. 
+  |                                 |YYYY       format, avoiding MM-DD
+  | -------------------------------------------------------------------------------------
+  | zoneinfo          |string       |String from zoneinfo time zone database. Europe/Paris,...
+  | -------------------------------------------------------------------------------------
+  | locale            |string       |BCP47/RFC5646 language tag, ex: en_US;
+  | -------------------------------------------------------------------------------------
+  | phone_number      |string       |E.164 is the RECOMMENDED format.Ex: +1 (425) 555-1212,
+  |                                 | +56 (2) 687 2400, +1 (604) 555-1234;ext=5678
+  | -------------------------------------------------------------------------------------
+  | phone_number_verified |boolean  |(verified by Auth.Provider)
+  | -------------------------------------------------------------------------------------
+  | address           |JSON object  |preferred postal address. value is a JSON [RFC4627] 
+  |                                 |structure containing some|all members defined in Section 5.1.1.
+  | -------------------------------------------------------------------------------------
+  | updated_at        |number       |JSON number of seconds since 1970-01-01T0:0:0Z measured in UTC
+  | -------------------------------------------------------------------------------------
   ```
 <!-- } -->
 
 5.1.1.  Address Claim
-```
-:= formated full address as single string
-:=  { .. } individual component fields 
-:= full address + { ...} individual fields.
-
-    formatted: Full maybe-multiline mailing address formatted for display. 
-    street_address: Full street address component (house number and/or street name and/or Post Office Box, ...)
-    locality: City or locality component. 
-    region: State, province, prefecture, or region component. 
-    postal_code: Zip code or postal code component. 
-    country: Country name component. 
-```
+  ```
+  | := formated full address as single string
+  | :=  { .. } individual component fields 
+  | := full address + { ...} individual fields.
+  | 
+  |     formatted: Full maybe-multiline mailing address formatted for display. 
+  |     street_address: Full street address component (house number and/or street name and/or Post Office Box, ...)
+  |     locality: City or locality component. 
+  |     region: State, province, prefecture, or region component. 
+  |     postal_code: Zip code or postal code component. 
+  |     country: Country name component. 
+  ```
 
 ### 5.1.2. Additional Claims
 * other Claims MAY be used.
@@ -1132,14 +1131,14 @@ In addition to OAuth 2.0 params the following parameters MUST be included:
 #### 5.2. Claims Languages and Scripts
   For example, next claims can be returned:
  ```
- website    : https://a.b.c
- website#fr : https://a.b.c?lang=fr
-         └┴─ language tags allow to specify the languages and scripts in claim BCP47
-              fr might be sufficient rather than fr-CA or fr-FR
+ | website    : https://a.b.c
+ | website#fr : https://a.b.c?lang=fr
+ |         └┴─ language tags allow to specify the languages and scripts in claim BCP47
+ |              fr might be sufficient rather than fr-CA or fr-FR
  ```
 * OpenID Connect defines the following Authorization Request parameter
  ```
- claims_locales : OPTIONAL. End-User's preferred languages and scripts for Claims being returned.
+ | claims_locales : OPTIONAL. End-User's preferred languages and scripts for Claims being returned.
  ```
 
 ### 5.3. UserInfo Endpoint
@@ -1155,9 +1154,9 @@ In addition to OAuth 2.0 params the following parameters MUST be included:
   or other methods as appropriate to enable Java Script Clients to access the endpoint.
 * Non-normative example:
   ```
-  GET /userinfo HTTP/1.1
-  Host: server.example.com
-  Authorization: Bearer SlAV32hkKG
+  | GET /userinfo HTTP/1.1
+  | Host: server.example.com
+  | Authorization: Bearer SlAV32hkKG
   ```
 * Successful UserInfo Response
   * OpenID Providers MAY elect to not return values for some requested Claims.
@@ -1172,20 +1171,19 @@ If signing and encrypting are requested, response MUST be signed then encrypted 
 If signed, the UserInfo Response SHOULD contain the Claims `iss=${OP_Issuer_Identifier_URL}` and `aud= ... include the RP Client ID value`. 
 
 * non-normative example of a UserInfo Response:
-
   ```
-  HTTP/1.1 200 OK
-  Content-Type: application/json
-
-  {
-   "sub": "248289761001",
-   "name": "Jane Doe",
-   "given_name": "Jane",
-   "family_name": "Doe",
-   "preferred_username": "j.doe",
-   "email": "janedoe@example.com",
-   "picture": "http://example.com/janedoe/me.jpg"
-  }
+  | HTTP/1.1 200 OK
+  | Content-Type: application/json
+  |
+  | {
+  |  "sub": "248289761001",
+  |  "name": "Jane Doe",
+  |  "given_name": "Jane",
+  |  "family_name": "Doe",
+  |  "preferred_username": "j.doe",
+  |  "email": "janedoe@example.com",
+  |  "picture": "http://example.com/janedoe/me.jpg"
+  | }
   ```
 *  non-normative example of a UserInfo Error Response:
 
@@ -1200,53 +1198,52 @@ If signed, the UserInfo Response SHOULD contain the Claims `iss=${OP_Issuer_Iden
 
 * OpenID Connect defines the following OPTIONAL scopes values that are used to request End-User's
   (Voluntary) Claims:
-  ```
-  - profile: default profile Claims: name, family_name, given_name, 
+  * profile: default profile Claims: name, family_name, given_name, 
              middle_name, nickname, preferred_username, profile,
              picture, website, gender, birthdate, zoneinfo, locale, updated_at. 
-  - email - address - phone
-  ```
+  * email - address - phone
 
   ```
   Claim type by assert origin:
-  
-  Normal      ¹ asserted by OP.                                               
-  Aggregated  ² asserted by 3rd party Claims Provider, returned as val. by OP.
-  Distributed ² asserted by 3rd party Claims Provider, returned as Ref. by OP.
-  * ¹: mandatory, ²: optional
-  
-  Normal Claims MUST be supported. Support for Aggregated Claims and Distributed Claims is OPTIONAL.
+  ```
+  | Normal      ¹ asserted by OP.                                               
+  | Aggregated  ² asserted by 3rd party Claims Provider, 
+  |               returned as val. by OP.
+  | Distributed ² asserted by 3rd party Claims Provider, 
+  |               returned as Ref. by OP.
+  | * ¹: mandatory, ²: optional
+  ```
+  NOTE: Normal Claims MUST be supported. Support for Aggregated Claims and Distributed Claims is OPTIONAL.
   ```
 
 * non-normative Aggregated and Distributed Claims Example:
-
   ```
-  {
-   "name": "Jane Doe",       <·· Direct claims override any claim in
-   "given_name": "Jane",         aggregated claim about Jane Doe
-   "family_name": "Doe",
-   "email": "janedoe@example.com",
-   "birthdate": "0000-03-22",
-   "eye_color": "blue",
-   "_claim_names": {                      <·· Claim Names for the Aggregated and Distributed Claims
-  ┌···· "credit_score"    : "src3"
-  ·     "payment_info"    : "src2",
-  · ┌·· "shipping_address": "src2",
-  · ·   "address"     :   "src1",
-  · ·   "phone_number":   "src1"
-  · ·  },                 └─┬──┘
-  · · "_claim_sources": {   ·
-  · ·   "src1": { <·········┘
-  · ·    "JWT": ...                       <·· Aggregated Claims issued by Claims Provider A
-  · ·   }                                     { "address": { ... }, "phone_number": "+1 ...." (})
-  · └·> "src2": {                         <·· Distributed Claims held by Claims Provider B
-  ·       "endpoint": "https://bank..."       { "payment_info": "...", "shipping_address": { ... } }
-  ·     },
-  └···> "src3": {                         <·· Claim held by Claims Provider C 
-          "endpoint": "https://credit...",    { "credit_score": 650 }
-          "access_token": "ksj3n283dke"}
-      }
-  }
+  | {
+  |  "name": "Jane Doe",       <·· Direct claims override any claim in
+  |  "given_name": "Jane",         aggregated claim about Jane Doe
+  |  "family_name": "Doe",
+  |  "email": "janedoe@example.com",
+  |  "birthdate": "0000-03-22",
+  |  "eye_color": "blue",
+  |  "_claim_names": {                      <·· Claim Names for the Aggregated and Distributed Claims
+  | ┌···· "credit_score"    : "src3"
+  | ·     "payment_info"    : "src2",
+  | · ┌·· "shipping_address": "src2",
+  | · ·   "address"     :   "src1",
+  | · ·   "phone_number":   "src1"
+  | · ·  },                 └─┬──┘
+  | · · "_claim_sources": {   ·
+  | · ·   "src1": { <·········┘
+  | · ·    "JWT": ...                       <·· Aggregated Claims issued by Claims Provider A
+  | · ·   }                                     { "address": { ... }, "phone_number": "+1 ...." (})
+  | · └·> "src2": {                         <·· Distributed Claims held by Claims Provider B
+  | ·       "endpoint": "https://bank..."       { "payment_info": "...", "shipping_address": { ... } }
+  | ·     },
+  | └···> "src3": {                         <·· Claim held by Claims Provider C 
+  |         "endpoint": "https://credit...",    { "credit_score": 650 }
+  |         "access_token": "ksj3n283dke"}
+  |     }
+  | }
   ```
 
 ### request vs request_uri Authorization Request parameters:
@@ -1258,56 +1255,38 @@ If signed, the UserInfo Response SHOULD contain the Claims `iss=${OP_Issuer_Iden
 
 * non-normative example of the Claims in a Request Object before base64url encoding and signing:
   ```
-  {
-   "iss": "s6BhdRkqt3",
-   "aud": "https://server.example.com",
-   "response_type": "code id_token",
-   "client_id": "s6BhdRkqt3",
-   "redirect_uri": "https://client.example.org/cb",
-   "scope": "openid",
-   "state": "af0ifjsldkj",
-   "nonce": "n-0S6_WzA2Mj",
-   "max_age": 86400,
-   "claims":
-    {
-     "userinfo": {
-       "given_name": {"essential": true},
-       "nickname": null,
-       "email": {"essential": true},
-       "email_verified": {"essential": true},
-       "picture": null
-     },
-     "id_token": {
-       "gender": null,
-       "birthdate": {"essential": true},
-       "acr": {"values": ["urn:mace:incommon:iap:silver"]}
-     }
-    }
-  }
+  | {
+  |  "iss": "s6BhdRkqt3",
+  |  "aud": "https://server.example.com",
+  |  "response_type": "code id_token",
+  |  "client_id": "s6BhdRkqt3",
+  |  "redirect_uri": "https://client.example.org/cb",
+  |  "scope": "openid",
+  |  "state": "af0ifjsldkj",
+  |  "nonce": "n-0S6_WzA2Mj",
+  |  "max_age": 86400,
+  |  "claims":
+  |   {
+  |    "userinfo": {
+  |      "given_name": {"essential": true},
+  |      "nickname": null,
+  |      "email": {"essential": true},
+  |      "email_verified": {"essential": true},
+  |      "picture": null
+  |    },
+  |    "id_token": {
+  |      "gender": null,
+  |      "birthdate": {"essential": true},
+  |      "acr": {"values": ["urn:mace:incommon:iap:silver"]}
+  |    }
+  |   }
+  | }
   ```
 
-Signing it with the RS256 algorithm results in this Request Object value (with line wraps within values for display purposes only):
+* Signing it with the RS256 algorithm results in this Request Object 
+  value (with line wraps within values for display purposes only):
 
-  eyJhbGciOiJSUzI1NiIsImtpZCI6ImsyYmRjIn0.ew0KICJpc3MiOiAiczZCaGRSa3
-  F0MyIsDQogImF1ZCI6ICJodHRwczovL3NlcnZlci5leGFtcGxlLmNvbSIsDQogInJl
-  c3BvbnNlX3R5cGUiOiAiY29kZSBpZF90b2tlbiIsDQogImNsaWVudF9pZCI6ICJzNk
-  JoZFJrcXQzIiwNCiAicmVkaXJlY3RfdXJpIjogImh0dHBzOi8vY2xpZW50LmV4YW1w
-  bGUub3JnL2NiIiwNCiAic2NvcGUiOiAib3BlbmlkIiwNCiAic3RhdGUiOiAiYWYwaW
-  Zqc2xka2oiLA0KICJub25jZSI6ICJuLTBTNl9XekEyTWoiLA0KICJtYXhfYWdlIjog
-  ODY0MDAsDQogImNsYWltcyI6IA0KICB7DQogICAidXNlcmluZm8iOiANCiAgICB7DQ
-  ogICAgICJnaXZlbl9uYW1lIjogeyJlc3NlbnRpYWwiOiB0cnVlfSwNCiAgICAgIm5p
-  Y2tuYW1lIjogbnVsbCwNCiAgICAgImVtYWlsIjogeyJlc3NlbnRpYWwiOiB0cnVlfS
-  wNCiAgICAgImVtYWlsX3ZlcmlmaWVkIjogeyJlc3NlbnRpYWwiOiB0cnVlfSwNCiAg
-  ICAgInBpY3R1cmUiOiBudWxsDQogICAgfSwNCiAgICJpZF90b2tlbiI6IA0KICAgIH
-  sNCiAgICAgImdlbmRlciI6IG51bGwsDQogICAgICJiaXJ0aGRhdGUiOiB7ImVzc2Vu
-  dGlhbCI6IHRydWV9LA0KICAgICAiYWNyIjogeyJ2YWx1ZXMiOiBbInVybjptYWNlOm
-  luY29tbW9uOmlhcDpzaWx2ZXIiXX0NCiAgICB9DQogIH0NCn0.nwwnNsk1-Zkbmnvs
-  F6zTHm8CHERFMGQPhos-EJcaH4Hh-sMgk8ePrGhw_trPYs8KQxsn6R9Emo_wHwajyF
-  KzuMXZFSZ3p6Mb8dkxtVyjoy2GIzvuJT_u7PkY2t8QU9hjBcHs68PkgjDVTrG1uRTx
-  0GxFbuPbj96tVuj11pTnmFCUR6IEOXKYr7iGOCRB3btfJhM0_AKQUfqKnRlrRscc8K
-  ol-cSLWoYE9l5QqholImzjT_cMnNIznW9E7CDyWXTsO70xnB4SkG6pXfLSjLLlxmPG
-  iyon_-Te111V8uE83IlzCYIb_NMXvtTIVc1jpspnTSD7xMbpL-2QgwUsAlMGzw
-
+  eyJh...  ~1300 base64enc chars ~ 
 * non-normative example of an Authorization Request using the request parameter
   ```
   https://myOIDC.mycomp.com/authorize?
@@ -1517,7 +1496,7 @@ Signing it with the RS256 algorithm results in this Request Object value (with l
 [[}]]
 
 
-## OpenID vs SAML [[{use_case.AAA,02_doc_has.comparative]]
+## OpenID vs SAML [[{02_doc_has.comparative,use_case.AAA,]]
 
 * Both OpenID vs SAML are different security protocols for single sign-on
   Authorization and Authentication.
@@ -1528,17 +1507,17 @@ Signing it with the RS256 algorithm results in this Request Object value (with l
   about authorization, authentication and/or attributes (emails, phones,...).
 
 * SAML defines:
-  - principal (`client` in OAuth).
-  - service provider (application / REST API, like in OAuth)
-  - Identity provider: (Active Directory, KeyCloak ...) Server holding
+  * principal (`client` in OAuth).
+  * service provider (application / REST API, like in OAuth)
+  * Identity provider: (Active Directory, KeyCloak ...) Server holding
     principal's ids + credentials and registered service providers.
 * SAML 2.0 defines also:
-  - assertions: Signed claims about a principal
-  - protocols : assertion requests and responses
-  - bindings  : how requests/responses happen between the service provider
+  * assertions: Signed claims about a principal
+  * protocols : assertion requests and responses
+  * bindings  : how requests/responses happen between the service provider
                 and identity provider using communication methods like
                 HTTP POST
-  - profile   : allowed combinations of (assertions, protocols, bindings)
+  * profile   : allowed combinations of (assertions, protocols, bindings)
                 for various use cases, like SSO.
 
   ```
@@ -1572,6 +1551,7 @@ Signing it with the RS256 algorithm results in this Request Object value (with l
   │                │   zation   │ Google,...  │                 │
   └────────────────┴────────────┴─────────────┴─────────────────┘
   ```
+[[02_doc_has.comparative}]]
 
 ## [[{PM.TODO.now]]
 * OAuth 2.0 Bearer Token Usage [RFC6750] 
@@ -1581,5 +1561,4 @@ Signing it with the RS256 algorithm results in this Request Object value (with l
 
 * OAuth 2.0 Threat Model and Security Considerations
   <https://tools.ietf.org/html/rfc6819>
-[[}]]
 [[}]]
