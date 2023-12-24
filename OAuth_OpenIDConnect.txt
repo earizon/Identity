@@ -581,23 +581,939 @@ When compared:
 [[}]]
 
 ## OpenID Connect [[{use_case.identity,standards.OpenID]]
-@[https://en.wikipedia.org/wiki/OpenID]
+Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
-OpenID Connect (2014) combines the features of OpenID 2.0, OpenID 
-Attribute Exchange 1.0, and OAuth 2.0 in a single protocol.
+* OpenID Connect (2014) combines the features of OpenID 2.0, OpenID 
+  Attribute Exchange 1.0, and OAuth 2.0 in a single protocol.
+* Simple identity layer on top of the OAuth 2.0 protocol, allowing Application 
+  clients to obtain End-User identity verifiable (signed) Claims using the new IANA 
+  registered JWT **ID Token**.
+* **OpenID Providers (OP)**: OAuth 2.0 Authentication Servers implementing OpenID Connect extension.
+* **Relying Parties (RPs)**: OAuth 2.0 Clients implementing OpenID Connect extensions.
 
-Summarized:
-* When our app contacts an OAuth 2 server requesting a new "code" it adds the
-  scope "OpenID" (reminder: the scope list is the list of permissions we want to be
-  granted for our app once the OAuth 2 finish properly).
+### PRE-SETUP:
+* OpenID Client (Relying Party) has been pre-registered to OP and the configuration information is
+  in place (both on RP and OP), citing:
+* An OIDC Application Client creates new OpenID Authorization Requests (OAuth Request extension),
+  and forwards User Agents ("Browsers" or native apps) to the OP Authorization Endpoint with
+  such Requests. Requests include standard OAuth 2.0 params + OIDC extensions.
 
-* The OAuth 2.0 flows continues as ussual, but in the last step, 
-  when the access-token is returned (the signed authorization token to 
-  access some resource/s), a signed JWT token is also returned in 
-  parallel with a set of identity "key:value" claims about the subject. 
-  (ej: { name: "Betty Mullan", isOlderThan18: yes, drivingLicence: 
-  "yes", signedBy: .... }. Basically, it returns information about the 
-  user connected to the (access-token) session.
+* In the happy path the ID Token is either returned directly by the Authorization Endpoint 
+  (Implicit Flow) or indirectly in the ID-Token end-point (this degree of indirection avoids
+  sending the ID-Token directly to a maybe untrusted User-Agent).
+
+## Nomenclature
+* Authentication Context Class: Set of authentication-methods or procedures that are considered to
+  be equivalent to each other in a particular context. 
+* Issuer: Entity that issues a set of Claims. 
+* Issuer Identifier: **Verifiable** Identifier for an Issuer. **In practice**, a case sensitive URL using
+  the **https scheme** that contains scheme, host, and optionally, port number and path components and
+  no query or fragment components. 
+* Request Object: JWT that contains a set of request parameters as its Claims. 
+
+* Pairwise Pseudonymous Identifier (PPID): Identifier that identifies the Entity to a Relying Party **that
+  cannot be correlated with the Entity's PPID at another Relying Party**. 
+* Personally Identifiable Information (PII): Information that 
+  * (a) can be used to identify the natural person to whom such information relates, or
+  * (b) is or might be directly or indirectly linked to a natural person to whom such information relates. 
+
+* Relying Party (RP): OAuth 2.0 **Client application requiring End-User Authentication and Claims from an
+  OpenID Provider.**
+* **Self-Issued OpenID Provider: Personal, self-hosted OpenID Provider that issues self-signed ID Tokens.**
+  In practice, a wallet.
+* Subject Identifier: Locally unique and never reassigned identifier within the Issuer for the End-User,
+  which is intended to be consumed by the Client. 
+* UserInfo Endpoint: (https scheme) URL Protected Resource that, when presented with an Access Token by
+  the Client, returns authorized information about the End-User represented by the corresponding
+  Authorization Grant.
+* The RP can send a request with the Access Token to the UserInfo Endpoint.
+* The UserInfo Endpoint returns Claims about the End-User.
+  ```
+  OpenID Connect protocol Summary:
+  Relaying                      OpenID  <·· In Self Issued OpenID, the OP can be a 
+  Party                    provider(OP)     "wallet"
+  +                                   +  
+  |                                   |
+  |---------(1) AuthN Request-------->|   End-User
+  |                                   |          +
+  |                                   |          |
+  |                                   |<--(2) -->|
+  |                                   |   Authen.+
+  |                                   | + Authoz.
+  |<--------(3) AuthN Response--------|
+  | (ID Token + opt. Access Token)    |
+  |                                   |
+  |-(4)(Opt)UserInfo Req(+acc.Token)->|
+  |<-----------(5) UserInfo Response -|
+  |                                   |
+  +                                   +
+  ```
+
+## ID Token Claims: 
+
+The following Claims are used within the ID Token for all OAuth 2.0 flows used by OpenID Connect
+
+* **iss**: REQUIRED. Issuer (identifier) of the response, Case sensitive URL using https-scheme. 
+* **sub**: REQUIRED. Up to 255 ASCII chars, case-sensitive, Subject Identifier, locally unique
+  ("within" the Issuer) and never reassigned.  intended to be consumed by the OAuth/OpenID (Application
+  ) Client, e.g., 24400320. 
+* **aud**: REQUIRED. array of case sensitive strings Audience(s) that 
+  this ID Token is intended for. It MUST contain at least the OAuth 2.0 
+  client_id of the Relying Party as an audience value.  The array can 
+  be replaced by the string when its length is just one.
+  The OP sets it to the pre-registered client_id and the Client must also
+  validate it again against the same pre-registered client_id 
+* **exp**: REQUIRED. Expiration Time JSON number of  seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time. 
+* **iat**: REQUIRED. Issued at  Time JSON number "  "
+  **OAuth/OpenID App. Clients can reject the token if it was issued too far away from current time.
+    The acceptable range is Client specific.**
+* **auth_time**: Time when End-User authentication occurred. REQUIRED when max_age or auth_time itself is also required.
+* **nonce**: case-sensitive String value used **to associate a Client session with an ID Token, and to mitigate replay attacks**.
+  Generated as part of the Authentication Request and passed "as is" to the ID Token.<br/>
+  Clients MUST verify that the nonce Claim Value has not changed.
+* **acr**: OPTIONAL. Authentication Context Class Reference String satisfied for for the authentication just performed.
+  * value "0" indicates the End-User authentication did not meet the requirements of ISO/IEC 29115 [ISO29115] level 1.<br/>
+    **Authentications with level 0 SHOULD NOT be used to authorize access to any resource of any monetary value**.
+    **This corresponds to the OpenID 2.0 PAPE [OpenID.PAPE] nist_auth_level 0.**<br/>
+  An absolute URI or an RFC 6711 [RFC6711] registered name SHOULD be used as the acr value; 
+* **amr**: OPTIONAL. JSON array of strings with Authentication Methods References. Values might indicate that both
+  password and OTP authentication methods were used. 
+* **azp**: OPTIONAL. StringOrURI OAuth 2.0 Client ID Authorized party - REQUIRED when the ID Token has a single audience
+  and it differs from the authorized party. 
+
+* ID Tokens MUST be signed using JWS [JWS] 
+* ID Tokens MUST optionally both signed and then encrypted using JWS [JWS] and JWE [JWE] respectively.
+  If encrypted, it MUST be signed then encrypted, resulting in a Nested JWT, as defined in [JWT].
+* ID Tokens MUST NOT use none as the alg value unless the Response Type used returns no ID Token from
+  the Authorization Endpoint (such as when using the Authorization Code Flow) and the Client explicitly 
+  requested the use of none at Registration time.
+* ID Tokens SHOULD NOT use the JWS or JWE x5u, x5c, jku, or jwk Header Parameter fields. 
+  Instead, **references to keys used are communicated in advance using Discovery and
+  Registration parameters, per Section 10.**
+* Normative example of the set of JWT Claim Set in ID Token:
+  ```
+  {
+   "iss": "https://server.example.com",
+   "sub": "24400320",
+   "aud": "s6BhdRkqt3",
+   "nonce": "n-0S6_WzA2Mj",
+   "exp": 1311281970,
+   "iat": 1311280970,
+   "auth_time": 1311280969,
+   "acr": "urn:mace:incommon:iap:silver"
+  }
+  ```
+3.  Authentication
+
+* Authentication result is returned in an ID Token following one of three paths:
+  * Authorization Code Flow (response_type=code).
+  * Implicit Flow (response_type = := id_token token | id_token)
+  * Hybrid Flow   (using other Response Type values defined in OAuth 2.0 Multiple Response Type Encoding Practices).
+  The flows determine how the ID Token and Access Token are returned to the Client.
+Flow comparative:
+```
+              Hybrid Flow  ··········─┐
+            Implicit Flow  ······─┐   ·
+  Authorization Code Flow  ···┐   ·   ·
+                              ·   ·   ·
+  Property                    v   v   v                         
+  All tokens returned ····· │no │yes│no
+     from AuthoEndpoint     │   │   │
+  All tokens returned ····· │yes│no │no
+      from Token Endpoint   │   │   │
+  Tokens not revealed  ···· │yes│no │no  [[{doc_has.key-point}]]
+      to User Agent         │   │   │
+      (browser)!!!          │   │   │
+  Client can be ··········· │yes│no │yes
+      authenticated         │yes│no │yes
+  Refresh Token possible .. │yes│no │yes
+  Communication in ········ │no │yes│no
+     one round trip         │   │   │
+  Most communication ...... │yes│no │Y/N
+  server-to-server          │   │   │      
+
+  **The flow used is determined by 
+    response_type value contained
+    in the Authorization Request**
+    (sent by the OAuth client)
+  "response_type"      │ Flow
+  code                 │ Auth. Code Flow
+  id_token             │ Implicit Flow
+  id_token token       │ Implicit Flow
+~~value~~ ¹            │ Implicit Flow
+  code id_token        │ Hybrid Flow
+  code token           │ Hybrid Flow
+  code id_token token  │ Hybrid Flow
+```
+
+* ¹ Defined in OAuth 2.0, not used in OpenID Connect,
+  since no ID Token would be returned.
+
+### Authentication using `Authorization Code Flow`
+
+* all tokens are returned from the Token Endpoint (that is must not 
+  be available to the User-agent).
+* An Authorization Code is returned to the Client (through the 
+  user-agent) which can then exchange it for an ID Token and an Access 
+  Token directly.  no tokens are exposed to the User Agent or other 
+  potentially malicious applications.
+
+
+  ```     
+  scope         : REQUIRED, openid is mandatory, others (profile, email, phone) are optional.
+                   (If response_type is id_token, profile email phone must be included to be
+                   returned in the ID token).
+6 response_type := authorization flow to be used, including parameters returned from the endpoints used.
+  client_id     : REQUIRED. OAuth 2.0 Client Identifier valid at the Authorization Server. 
+  redirect_uri  : REQUIRED. Redirection URI (https¹ scheme)to which the response will be sent if 
+                  required by the flow. **It MUST exactly match one of the Redirection URI values 
+                  for the Client pre-registered at the OpenID Provider**
+                  ¹http can be used provided that the Client Type is confidential)
+                   native apps can use an alternative scheme for deep-links callbacks.
+  state         : RECOMMENDED. Opaque value used to maintain state between the request and the callback. 
+                  Typically, Cross-Site Request Forgery (CSRF, XSRF) mitigation is done by  [[{PM.TODO}]]
+                  cryptographically binding the value of this parameter with a browser cookie. 
+  response_mode : OPTIONAL. (OpenID extension), Informs to the 
+                  Authorization Server of the mechanism to be used for returning 
+                  parameters from the Authorization Endpoint. This use of this 
+                  parameter is NOT RECOMMENDED when the Response Mode that would be 
+                  requested is the default mode specified for the Response Type. 
+  nonce         : OPTIONAL. (OpenID extension?). 
+  display       : OPTIONAL. ASCII string value that specifies how the Authorization Server displays 
+                  the authentication and consent user interface pages to the End-User. The defined 
+                  values are:
+                  page:  Auth.Server SHOULD display Auth. and Consent UI consistent with a full
+                        User Agent page view. (Default mode)
+                  popup:
+                  touch: 
+                  wap:  UI consistent with "feature phone" type display. 
+  prompt        : OPTIONAL. Space delimited, case sensitive list of ASCII string values that specifies
+                  whether the Authorization Server prompts the End-User for reauthentication and consent.
+                  The defined values are:
+                  none: Auth.Server MUST NOT display any authentication or consent user interface pages.
+                        An error is returned if an End-User is not already authenticated or the Client 
+                        does not have pre-configured consent for the requested Claims or does not fulfill
+                        other conditions for processing the request. 
+                        error code will typically be "login_required", ... or another code defined in 
+                        Section 3.1.2.6. 
+                  login: Authorization Server SHOULD prompt the End-User for reauthentication.
+                  consent: The Authorization Server SHOULD prompt the End-User for consent before 
+                           returning information to the Client. or return an error.
+                  select_account: Auth.Server SHOULD prompt the End-User to select a user account.
+                           Use-case:End-User has multiple accounts at the Auth.Server and they might
+                           have current sessions for.
+                  **The prompt parameter can be used by the Client to make sure that 
+                  the End-User is still present for the current session or to bring 
+                  attention to the request**
+    max_age     : OPTIONAL. Max.Authentication Age (seconds) since the last time the End-User was actively
+                  authenticated by the Aut.Server/OP. OP MUST attempt to actively once passed.
+    ui_locales  : OPTIONAL. space-separated list of BCP47 [RFC5646] language tag values, ordered by preference.
+                  ex: "fr-CA fr en" 
+    id_token_hint: OPTIONAL. ID Token previously issued by the Auth.Server being passed as a hint about the
+                  End-User's current or past authenticated session with the Client. 
+                  If End-User identified by the ID Token is NOT Yet logged in throw error such as 
+                  login_required. 
+                  When possible, it SHOULD be present for prompt=none.
+                  Auth.Server need not be listed as an audience of the ID Token when it is used as an
+                  id_token_hint value. 
+    login_hint : OPTIONAL. Hint to the Auth.Server about the login identifier the End-User might use
+                 to log in (if necessary). It can be used by the RP, for example, if it first asks the
+                 End-User for their e-mail/phone number address. Real use is left to the OP's discretion. 
+    acr_values : OPTIONAL. Requested Authentication Context Class Reference values. Specifies the acr
+                 values that the Auth.Server is being requested to use for processing this 
+                 Authentication Request, with the values appearing in order of preference. The
+                 Authentication Context Class satisfied by the authentication performed is returned 
+                 as the acr Claim Value, as specified in Section 2. The acr Claim is requested as a
+                 Voluntary Claim by this parameter. 
+    claims     : "optional" JSON list of Claims.  Mandatory to request non-standard claims.
+                 See RFC for details. 
+                 
+
+    See Sections 3.2.2, 3.3.2, 5.2, 5.5, 6, and 7.2.1 for additional 
+    Authorization Request parameters and parameter values defined by this 
+    specification.
+  ```
+
+* non-normative example HTTP 302 redirect response by the Client,
+**which triggers the User Agent to make an Authentication Request to 
+  the Authorization Endpoint**:
+
+  ```
+  HTTP/1.1 302 Found
+  Location: https://server.example.com/authorize?
+    response_type=code
+    &scope=openid%20profile%20email
+    &client_id=s6BhdRkqt3
+    &state=af0ifjsldkj
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+  ```
+
+* non-normative example successful Authentication response using code flow: 
+  ```
+  HTTP/1.1 302 Found
+  Location: https://client.example.org/cb?
+    code=SplxlOBeZQQYbYS6WxSbIA
+    &state=af0ifjsldkj
+  ```
+
+* If End-User denies the request or the End-User authentication 
+  fails, the OP (Auth.Server) informs the RP (Client) by using the 
+  Error Response parameters defined in Section 4.1.2.1 of OAuth 2.0 
+  [RFC6749]. (HTTP errors unrelated to RFC 6749 are returned to the 
+  User Agent using the appropriate HTTP status code).
+
+* Unless the Redirection URI is invalid, the Auth.Server returns the 
+  Client to the Redirection URI specified in the Authorization Request 
+  with the appropriate error and state parameters. Other parameters 
+  SHOULD NOT be returned.
+
+* In addition to error codes defined in Section 4.1.2.1 of OAuth 2.0 [[{PM.TODO}]]
+  this specification also defines the following error codes:
+  ```
+  - interaction_required: OP requires End-User interaction of some form
+  - login_required: 
+  - account_selection_required: 
+  - consent_required: 
+  - invalid_request_uri: request_uri in Auth.Request returns error or contains invalid data. 
+  - invalid_request_object: request parameter contains an invalid Request Object. 
+  - request_not_supported: OP does not support use of the request parameter defined in Section 6. 
+  - request_uri_not_supported: OP does not support use of the request_uri parameter defined in Section 6. 
+  - registration_not_supported: OP does not support use of the registration parameter defined in Section 7.2.1. 
+  ```
+* error response parameters are the following:
+  ```
+  - error: REQUIRED. Error code. 
+  - error_description: OPTIONAL. Human-readable ASCII encoded text description of the error. 
+  - error_uri: OPTIONAL. URI of a web page that includes additional information about the error. 
+  - state: OAuth 2.0 state value. REQUIRED if provided in Auth.Request.
+  ```
+
+* non-normative Authorization Code Flow error response:
+  ```
+  HTTP/1.1 302 Found
+  Location: https://client.example.org/cb?
+    error=invalid_request
+    &error_description=
+      Unsupported%20response_type%20value
+    &state=af0ifjsldkj
+  ```
+
+* Authentication Response Validation
+  * (Open ID Application) Client makes a Token Request by presenting its Authorization Grant 
+    (in the form of an Authorization Code) to the Token Endpoint using `grant_type` value
+    authorization_code, as described in Section 4.1.3 of OAuth 2.0 [RFC6749].
+  * If the Client is a Confidential Client, then it MUST authenticate to the Token Endpoint
+    using the authentication method registered for its client_id, as described in Section 9.
+  * The Client sends the parameters to the Token Endpoint using the HTTP POST method and
+    Form Serialization, per Section 13.2, as described in Section 4.1.3 of OAuth 2.0 [RFC6749].
+  * non-normative example of Token Request:
+    ```
+    POST /token HTTP/1.1
+    Host: server.example.com
+    Content-Type: application/x-www-form-urlencoded
+    Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+  
+    grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
+      &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+    ```
+
+* 3.1.3.2. Token Request Validation by Auth.Server (from Client App)
+  * Authenticate the Client if it was issued Client Credentials or if 
+    it uses another Client Authentication method, per Section 9.
+  * Ensure the Authorization Code was issued to the authenticated Client.
+  * Verify that the Authorization Code is valid.
+    If possible, verify that the Authorization Code has not been 
+    previously used.
+  * Ensure that `redirect_uri` value is identical to the original
+    value included in the initial Auth.Request. If not present
+    the OP MAY return an error or proceed. 
+  * Verify that the Authorization Code used was issued in response 
+    to an OpenID Connect Authentication Request.
+
+* 3.1.3.3. Successful Token Response
+   
+* On succesful validation the OP returns a successful response including an
+  `ID Token` and an `Access Token` with params defined in Section 4.1.4 of 
+  OAuth 2.0 [RFC6749] (application/json media type)
+* OAuth 2.0 `token_type` value MUST be Bearer, as specified in OAuth 2.0
+  Bearer Token Usage [RFC6750], unless another Token Type has been 
+  negotiated with the Client. 
+
+In addition to OAuth 2.0 params the following parameters MUST be included:
+
+```
+  id_token: JWT ID Token value associated with the authenticated session
+```
+
+**All Token Responses that contain tokens, secrets, or other 
+  sensitive information MUST include the following HTTP response 
+  header fields+values**
+  ```
+  Header Name    │  Header Value
+  ───────────────┼──────────────
+  Cache-Control  │  no-store
+  Pragma         │  no-cache
+  ```
+
+* non-normative example of successful Token Response.
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Pragma: no-cache
+
+  {
+   "access_token": "SlAV32hkKG",
+   "token_type": "Bearer",
+   "refresh_token": "8xLOxBtZp8",
+   "expires_in": 3600,
+   "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ.ewogImlzc
+     yI6ICJodHRwOi8vc2VydmVyLmV4YW1wbGUuY29tIiwKICJzdWIiOiAiMjQ4Mjg5
+     NzYxMDAxIiwKICJhdWQiOiAiczZCaGRSa3F0MyIsCiAibm9uY2UiOiAibi0wUzZ
+     fV3pBMk1qIiwKICJleHAiOiAxMzExMjgxOTcwLAogImlhdCI6IDEzMTEyODA5Nz
+     AKfQ.ggW8hZ1EuVLuxNuuIJKX_V8a_OMXzR0EHR9R6jgdqrOOF4daGU96Sr_P6q
+     Jp6IcmD3HP99Obi1PRs-cwh3LO-p146waJ8IhehcwL7F09JdijmBqkvPeB2T9CJ
+     NqeGpe-gccMg4vfKjkM8FcGvnzZUN4_KSP0aAp1tOJ1zZwgjxqGByKHiOtX7Tpd
+     QyHE5lcMiKPXfEIQILVq0pc_E2DzL7emopWoaoZTF_m0_N0YzFC6g6EJbOEoRoS
+     K5hoDalrcvRYLSrQAZZKflyuVCyixEoV9GfNQC3_osjzw2PAithfubEEBLuVVk4
+     XUVrWOLrLl0nx7RkKU8NXNHq-rvKMzqg"
+  }
+  ```
+
+* Token Error Response
+
+  ```
+  HTTP/1.1 400 Bad Request
+  Content-Type: application/json
+  Cache-Control: no-store
+  Pragma: no-cache
+
+  {
+   "error": "invalid_request"
+  }
+  ```
+
+* The Client MUST validate the Token Response as follows:
+1. Follow validation rules in RFC 6749, especially those in Sections 5.1 and 10.12.
+1. Follow the ID Token validation rules in Section 3.1.3.7.
+1. Follow the Access Token validation rules in Section 3.1.3.8.
+
+3.1.3.6. ID Token
+* The contents of the ID Token are as described in Section 2.
+
+* When using the Authorization Code Flow, these additional requirements 
+  for the following ID Token Claims apply:
+  ```
+  at_hash: OPTIONAL. Access Token hash value. Ex: 
+      alg==RS256 => SHA-256(access_token) => take left-most 128 bits => base64url
+  ```
+
+* Clients must validate the token as specified in 3.1.3.7. Highlights:
+
+* **If the ID Token is received via direct communication between the 
+  Client and the Token Endpoint (which it is in this flow), the TLS 
+  server validation MAY be used to validate the issuer in place of 
+  checking the token signature**. 
+
+3.2. Authentication using the Implicit Flow
+1. Client prepares an Authentication Request containing the desired request parameters.
+2. Client sends the request to the Auth.Server.
+3. Auth.Server Authenticates the End-User.
+4. Auth.Server obtains End-User Consent/Authorization.
+5. Auth.Server sends the End-User back to the Client with an ID Token and, if requested, an Access Token.
+6. Client validates the ID token and retrieves the End-User's Subject Identifier.
+
+3.3.  Authentication using the Hybrid Flow
+
+1. Client prepares an Authentication Request containing the desired request parameters.
+1. Client sends the request to the Auth.Server.
+1. Auth.Server Authenticates the End-User.
+1. Auth.Server obtains End-User Consent/Authorization.
+1. Auth.Server sends the End-User back to the Client with an 
+   Authorization Code and, depending on the Response Type, one or more 
+   additional parameters.
+1. Client requests a response using the Authorization Code at the Token Endpoint.
+1. Client receives a response that contains an ID Token and Access Token in the response body.
+1. Client validates the ID Token and retrieves the End-User's Subject Identifier.
+
+
+##  Initiating Login from a Third Party
+* In some cases, login flow is initiated by an OpenID Provider or another party, 
+  rather than the Relying Party. 
+* In this case, the initiator redirects to the RP at its login initiation endpoint, 
+  which requests that the RP send an Authentication Request to a specified OP. 
+  (See original spec for further details).
+
+## 5. Claims
+
+* This section specifies how the Client can obtain Claims about the End-User and the Authentication event. 
+
+5.1. Standard Claims
+
+* They can be requested to be returned either in the UserInfo Response, per Section 5.3.2,
+  or in the ID Token, per Section 2. <!-- { -->
+  ```
+  Member            |Type         |Description
+  sub               |string       |Subject Identifier for End-User at the Issuer.
+  -------------------------------------------------------------------------------------
+  name              |string       |End-User's **full** name in displayable form 
+                                  |including all name parts, possibly including titles 
+                                  |and suffixes, ordered according to the End-User's 
+                                  |locale and preferences.
+  -------------------------------------------------------------------------------------
+  given_name        |string       |first name(s) of End-User, white-space separated.
+  -------------------------------------------------------------------------------------
+  family_name       |string       |last name(s) of the End-User, white-space separated. 
+  -------------------------------------------------------------------------------------
+  middle_name       |string       |Middle name(s) of the End-User white-space separated. 
+  -------------------------------------------------------------------------------------
+  nickname          |string       |Casual name of the End-User
+  -------------------------------------------------------------------------------------
+  preferred_username|string       |Shorthand name by which the End-User wishes to be
+                                  |referred to at the RP, such as janedoe or j.doe.
+                                  |value MAY be any valid JSON string including special
+                                  |characters such as @, /, or whitespace. RP MUST NOT
+                                  |rely upon this value being unique.
+  -------------------------------------------------------------------------------------
+  profile           |string       |URL of the End-User's profile page.
+  -------------------------------------------------------------------------------------
+  picture           |string       |URL of the End-User's profile picture. URL MUST refer
+                                  |to an (PNG, JPEG, ...) image file, rather than to a 
+                                  | Web page containing an image.
+  -------------------------------------------------------------------------------------
+  website           |string       |URL of the End-User's Web page or blog.
+  -------------------------------------------------------------------------------------
+  email             |string       |End-User's preferred e-mail address. 
+                                  |RP MUST NOT rely upon this value being unique.
+  -------------------------------------------------------------------------------------
+  email_verified    |boolean      |(verified by Auth.Provider)
+  -------------------------------------------------------------------------------------
+  gender            |string       |:= female | male | "other values" MAY be used 
+  -------------------------------------------------------------------------------------
+  birthdate         |string       |YYYY-MM-DD format. Year MAY be 0000 to omit it. 
+                                  |YYYY       format, avoiding MM-DD
+  -------------------------------------------------------------------------------------
+  zoneinfo          |string       |String from zoneinfo time zone database. Europe/Paris,...
+  -------------------------------------------------------------------------------------
+  locale            |string       |BCP47/RFC5646 language tag, ex: en_US;
+  -------------------------------------------------------------------------------------
+  phone_number      |string       |E.164 is the RECOMMENDED format.Ex: +1 (425) 555-1212,
+                                  | +56 (2) 687 2400, +1 (604) 555-1234;ext=5678
+  -------------------------------------------------------------------------------------
+  phone_number_verified |boolean  |(verified by Auth.Provider)
+  -------------------------------------------------------------------------------------
+  address           |JSON object  |preferred postal address. value is a JSON [RFC4627] 
+                                  |structure containing some|all members defined in Section 5.1.1.
+  -------------------------------------------------------------------------------------
+  updated_at        |number       |JSON number of seconds since 1970-01-01T0:0:0Z measured in UTC
+  -------------------------------------------------------------------------------------
+  ```
+<!-- } -->
+
+5.1.1.  Address Claim
+```
+:= formated full address as single string
+:=  { .. } individual component fields 
+:= full address + { ...} individual fields.
+
+    formatted: Full maybe-multiline mailing address formatted for display. 
+    street_address: Full street address component (house number and/or street name and/or Post Office Box, ...)
+    locality: City or locality component. 
+    region: State, province, prefecture, or region component. 
+    postal_code: Zip code or postal code component. 
+    country: Country name component. 
+```
+
+### 5.1.2. Additional Claims
+* other Claims MAY be used.
+* It is RECOMMENDED that collision-resistant names be used for the Claim Names,
+  as described in the JSON Web Token (JWT) [JWT] specification.
+
+#### 5.2. Claims Languages and Scripts
+  For example, next claims can be returned:
+ ```
+ website    : https://a.b.c
+ website#fr : https://a.b.c?lang=fr
+         └┴─ language tags allow to specify the languages and scripts in claim BCP47
+              fr might be sufficient rather than fr-CA or fr-FR
+ ```
+* OpenID Connect defines the following Authorization Request parameter
+ ```
+ claims_locales : OPTIONAL. End-User's preferred languages and scripts for Claims being returned.
+ ```
+
+### 5.3. UserInfo Endpoint
+* when a `response_type` results in an Access Token being issued, the UserInfo endpoint is
+  used to retrieve the claims. When `response_type==id_token` the Claims are returned in the ID Token.
+
+* App.Client makes a request to the UserInfo Protected Resource (TLS Endpoint
+  using an Access Token obtained through OpenID Connect Authentication in the OAuth 2.0
+  Bearer Token in the Authorization header. GET recommened, POST MUST supported.
+  These Claims are normally represented by a JSON object that contains a collection 
+  of name and value pairs for the Claims.
+* UserInfo Endpoint SHOULD support the use of Cross Origin Resource Sharing (CORS) and
+  or other methods as appropriate to enable Java Script Clients to access the endpoint.
+* Non-normative example:
+  ```
+  GET /userinfo HTTP/1.1
+  Host: server.example.com
+  Authorization: Bearer SlAV32hkKG
+  ```
+* Successful UserInfo Response
+  * OpenID Providers MAY elect to not return values for some requested Claims.
+    that should be omitted from the JSON object -vs null or empty values- 
+* The sub Claim in the UserInfo Response MUST be verified to exactly 
+  match the sub Claim in the ID Token; if they do not match, the 
+  UserInfo Response values MUST NOT be used.
+
+response content-type := application/json | application/jwt
+
+If signing and encrypting are requested, response MUST be signed then encrypted  with the result being a Nested JWT, as defined in [JWT].
+If signed, the UserInfo Response SHOULD contain the Claims `iss=${OP_Issuer_Identifier_URL}` and `aud= ... include the RP Client ID value`. 
+
+* non-normative example of a UserInfo Response:
+
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+
+  {
+   "sub": "248289761001",
+   "name": "Jane Doe",
+   "given_name": "Jane",
+   "family_name": "Doe",
+   "preferred_username": "j.doe",
+   "email": "janedoe@example.com",
+   "picture": "http://example.com/janedoe/me.jpg"
+  }
+  ```
+*  non-normative example of a UserInfo Error Response:
+
+  ```
+  HTTP/1.1 401 Unauthorized
+  WWW-Authenticate: error="invalid_token",
+    error_description="The Access Token expired"
+  ```
+* The Client MUST validate the UserInfo Response according to RFC.
+
+### Requesting Claims using Scope Values
+
+* OpenID Connect defines the following OPTIONAL scopes values that are used to request End-User's
+  (Voluntary) Claims:
+  ```
+  - profile: default profile Claims: name, family_name, given_name, 
+             middle_name, nickname, preferred_username, profile,
+             picture, website, gender, birthdate, zoneinfo, locale, updated_at. 
+  - email - address - phone
+  ```
+
+  ```
+  Claim type by assert origin:
+  
+  Normal      ¹ asserted by OP.                                               
+  Aggregated  ² asserted by 3rd party Claims Provider, returned as val. by OP.
+  Distributed ² asserted by 3rd party Claims Provider, returned as Ref. by OP.
+  * ¹: mandatory, ²: optional
+  
+  Normal Claims MUST be supported. Support for Aggregated Claims and Distributed Claims is OPTIONAL.
+  ```
+
+* non-normative Aggregated and Distributed Claims Example:
+
+  ```
+  {
+   "name": "Jane Doe",       <·· Direct claims override any claim in
+   "given_name": "Jane",         aggregated claim about Jane Doe
+   "family_name": "Doe",
+   "email": "janedoe@example.com",
+   "birthdate": "0000-03-22",
+   "eye_color": "blue",
+   "_claim_names": {                      <·· Claim Names for the Aggregated and Distributed Claims
+  ┌···· "credit_score"    : "src3"
+  ·     "payment_info"    : "src2",
+  · ┌·· "shipping_address": "src2",
+  · ·   "address"     :   "src1",
+  · ·   "phone_number":   "src1"
+  · ·  },                 └─┬──┘
+  · · "_claim_sources": {   ·
+  · ·   "src1": { <·········┘
+  · ·    "JWT": ...                       <·· Aggregated Claims issued by Claims Provider A
+  · ·   }                                     { "address": { ... }, "phone_number": "+1 ...." (})
+  · └·> "src2": {                         <·· Distributed Claims held by Claims Provider B
+  ·       "endpoint": "https://bank..."       { "payment_info": "...", "shipping_address": { ... } }
+  ·     },
+  └···> "src3": {                         <·· Claim held by Claims Provider C 
+          "endpoint": "https://credit...",    { "credit_score": 650 }
+          "access_token": "ksj3n283dke"}
+      }
+  }
+  ```
+
+### request vs request_uri Authorization Request parameters:
+
+* request:  OPTIONAL. enable requests to be passed in a self-contained JSON+base64url o JWT (if signed and/or encrypted)
+            whose Claims are the request parameters. 
+* request_uri: OPTIONAL. enables requests to be passed by https reference, rather than by value.
+            (particularly useful for large requests encoded in QR, ...).
+
+* non-normative example of the Claims in a Request Object before base64url encoding and signing:
+  ```
+  {
+   "iss": "s6BhdRkqt3",
+   "aud": "https://server.example.com",
+   "response_type": "code id_token",
+   "client_id": "s6BhdRkqt3",
+   "redirect_uri": "https://client.example.org/cb",
+   "scope": "openid",
+   "state": "af0ifjsldkj",
+   "nonce": "n-0S6_WzA2Mj",
+   "max_age": 86400,
+   "claims":
+    {
+     "userinfo": {
+       "given_name": {"essential": true},
+       "nickname": null,
+       "email": {"essential": true},
+       "email_verified": {"essential": true},
+       "picture": null
+     },
+     "id_token": {
+       "gender": null,
+       "birthdate": {"essential": true},
+       "acr": {"values": ["urn:mace:incommon:iap:silver"]}
+     }
+    }
+  }
+  ```
+
+Signing it with the RS256 algorithm results in this Request Object value (with line wraps within values for display purposes only):
+
+  eyJhbGciOiJSUzI1NiIsImtpZCI6ImsyYmRjIn0.ew0KICJpc3MiOiAiczZCaGRSa3
+  F0MyIsDQogImF1ZCI6ICJodHRwczovL3NlcnZlci5leGFtcGxlLmNvbSIsDQogInJl
+  c3BvbnNlX3R5cGUiOiAiY29kZSBpZF90b2tlbiIsDQogImNsaWVudF9pZCI6ICJzNk
+  JoZFJrcXQzIiwNCiAicmVkaXJlY3RfdXJpIjogImh0dHBzOi8vY2xpZW50LmV4YW1w
+  bGUub3JnL2NiIiwNCiAic2NvcGUiOiAib3BlbmlkIiwNCiAic3RhdGUiOiAiYWYwaW
+  Zqc2xka2oiLA0KICJub25jZSI6ICJuLTBTNl9XekEyTWoiLA0KICJtYXhfYWdlIjog
+  ODY0MDAsDQogImNsYWltcyI6IA0KICB7DQogICAidXNlcmluZm8iOiANCiAgICB7DQ
+  ogICAgICJnaXZlbl9uYW1lIjogeyJlc3NlbnRpYWwiOiB0cnVlfSwNCiAgICAgIm5p
+  Y2tuYW1lIjogbnVsbCwNCiAgICAgImVtYWlsIjogeyJlc3NlbnRpYWwiOiB0cnVlfS
+  wNCiAgICAgImVtYWlsX3ZlcmlmaWVkIjogeyJlc3NlbnRpYWwiOiB0cnVlfSwNCiAg
+  ICAgInBpY3R1cmUiOiBudWxsDQogICAgfSwNCiAgICJpZF90b2tlbiI6IA0KICAgIH
+  sNCiAgICAgImdlbmRlciI6IG51bGwsDQogICAgICJiaXJ0aGRhdGUiOiB7ImVzc2Vu
+  dGlhbCI6IHRydWV9LA0KICAgICAiYWNyIjogeyJ2YWx1ZXMiOiBbInVybjptYWNlOm
+  luY29tbW9uOmlhcDpzaWx2ZXIiXX0NCiAgICB9DQogIH0NCn0.nwwnNsk1-Zkbmnvs
+  F6zTHm8CHERFMGQPhos-EJcaH4Hh-sMgk8ePrGhw_trPYs8KQxsn6R9Emo_wHwajyF
+  KzuMXZFSZ3p6Mb8dkxtVyjoy2GIzvuJT_u7PkY2t8QU9hjBcHs68PkgjDVTrG1uRTx
+  0GxFbuPbj96tVuj11pTnmFCUR6IEOXKYr7iGOCRB3btfJhM0_AKQUfqKnRlrRscc8K
+  ol-cSLWoYE9l5QqholImzjT_cMnNIznW9E7CDyWXTsO70xnB4SkG6pXfLSjLLlxmPG
+  iyon_-Te111V8uE83IlzCYIb_NMXvtTIVc1jpspnTSD7xMbpL-2QgwUsAlMGzw
+
+* non-normative example of an Authorization Request using the request parameter
+  ```
+  https://myOIDC.mycomp.com/authorize?
+    response_type=code%20id_token
+    &client_id=s6BhdRkqt3
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+    &scope=openid
+    &state=af0ifjsldkj
+    &nonce=n-0S6_WzA2Mj
+    &request=eyJhbGc... <·· JSON reques base64url encoded
+  ```
+
+* non-normative example of an Authorization Request using the request_uri parameter. 
+  ```
+  https://server.example.com/authorize?
+    response_type=code%20id_token
+    &client_id=s6BhdRkqt3
+    &request_uri=https%3A%2F%2Fclient.example.org%2Frequest.jwt%23GkurKxf5T0Y-mnPFCHqWOMiZi4VS138cQO_V7PZHAdM
+    &state=af0ifjsldkj&nonce=n-0S6_WzA2Mj
+    &scope=openid
+  ```
+
+## 7.  Self-Issued OpenID Provider
+
+* Self-Issued OpenID Providers: personal, self-hosted OPs that issue self-signed ID Tokens. 
+* **Self-Issued OPs use the special Issuer Identifier `https://self-issued.me`**
+* messages used to communicate with Self-Issued OPs are mostly the same as standard OPs,
+  with a few additional parameters.
+
+### 7.1.  Self-Issued OpenID Provider Discovery
+
+* **dynamic discovery is not performed**. Instead, then the following static configuration values are used:
+
+  ```
+  {
+   "authorization_endpoint"  : "openid:",
+   "issuer"                  : "https://self-issued.me",
+   "scopes_supported"        : ["openid", "profile", "email", "address", "phone"],
+   "response_types_supported": ["id_token"],
+   "subject_types_supported" : ["pairwise"],
+   "id_token_signing_alg_values_supported": ["RS256"],
+   "request_object_signing_alg_values_supported": ["none", "RS256"]
+  }
+  ```
+
+* No client registration is required for Self-Issued OP.
+
+* The new optional `registration` Authorization Request parameter enable Clients to provide
+  additional registration information to Self-Issued OpenID Providers:
+  (information that would normally be provided to an OP during Dynamic Client Registration).
+  The value is a JSON object containing Client metadata values, as defined in
+  Section 2.1 of the OpenID Connect Dynamic Client Registration 1.0 spec. 
+  * None of this information is REQUIRED by Self-Issued OPs.
+  * Registration parameters typically used would be: `policy_uri`, `tos_uri`, `logo_uri`. 
+    `redirect_uris` (in case of 2+ Redirection URIs exists) and, for Clients
+   requesting encrypted responses, `jwks_uri`, `id_token_encrypted_response_alg` and
+   `id_token_encrypted_response_enc`.
+
+* Standard OIDC Provider Request in Self-issued OIDC include:
+  * scope:  REQUIRED. with same meaning as in standard OIDC. 
+  * response_type: REQUIRED. **Constant string value id_token**<br/>
+    NOTE that all Claims are returned in the ID Token.
+  * client_id: REQUIRED. **Client ID value for the Client, which
+    in this case contains the redirect_uri value of the Client.**:<br/>
+  * ~redirect_uri~~ not required since it is equal to cient_id.
+  * id_token_hint: OPTIONAL. as in standard OIDC.
+  * claims: OPTIONAL. as in standard OIDC.
+  * registration: OPTIONAL. Self-OIDC extension as explained previously.
+  * request: OPTIONAL. as in standard OIDC.
+  * Other parameters MAY be sent. 
+
+* non-normative example HTTP 302 redirect response by the Client,
+  which triggers the User Agent to make an Authentication Request to 
+  the Self-Issued OpenID Provider (with line wraps within values for display purposes only):
+
+  ```
+  HTTP/1.1 302 Found
+  Location: openid://?
+    response_type=id_token
+    &client_id=https%3A%2F%2Fclient.example.org%2Fcb
+    &scope=openid%20profile
+    &state=af0ifjsldkj
+    &nonce=n-0S6_WzA2Mj
+    &registration=%7B%22logo_uri%22%3A%22https%3A%2F%2F
+      client.example.org%2Flogo.png%22%7D
+  ```
+
+### 7.4. Self-Issued OpenID Provider Response
+
+* SSI OP response is equal to normal Implicit Flow response with next refinements:
+  * Implicit Flow response => response parameters will be returned in the URL fragment component,
+    unless a different Response Mode was specified.
+  * `iss=https://self-issued.me`
+  * `sub_jwk` required. Public key used to check signature of self-issued ID Token.
+     A Claim is present, with value being public key used to check signature of ID Token.
+  * `sub=base64url representation of thumbprint of key in the sub_jwk Claim`. 
+  * No Access Token is returned for accessing a UserInfo Endpoint, so all Claims 
+    returned MUST be in the ID Token.
+
+* Check 7.5.  for Self-Issued ID Token Validation
+
+## 8 Subject Identifier Types
+
+  ```
+  public  : same sub value sued for all Clients. 
+  pairwise: Provides a different sub value to each Client.
+            See section 8.1 in RFC for details.
+  ```
+
+## 9.   Methods Client-to-OpenID Provider Authentication 
+
+* `client_secret_basic`: Clients receives in presetup a `client_secret` 
+  from Auth.Server (RFC6749, Section 2.3.1 OAuth 2.0 ) using HTTP Basic
+  authentication scheme. 
+* client_secret_post:  similar to client_secret_basic, including Client
+  Credentials in the request body. 
+* `client_secret_jwt`: Client authenticates in accordance with JWT Profile
+  for OAuth 2.0 Client Authentication and Authorization Grants and
+  Assertion Framework for OAuth 2.0 Client Authentication and 
+  Authorization Grants [OAuth.Assertions]. See RFC for details.
+* `private_key_jwt`: Clients pre-register pub.key
+          
+
+## See section 10 of RFC for details of Signatures and Encryption
+
+### 10.1.1. Rotation of signing keys 
+* It can be accomplished with the following approach:
+  signer publishes its keys in a JWK Set at its jwks_uri location and includes 
+  the kid of the signing key in the JOSE Header of each message to indicate
+  to the verifier which key is to be used to validate the signature.
+
+### 10.2.1.  Rotating encryption keys necessarily:
+* It uses a different process than the one for signing keys because the
+  encrypting party starts the process and thus cannot rely on a 
+  change in kid as a signal that keys need to change.  The encrypting 
+  party still uses the kid Header Parameter in the JWE to tell the 
+  decrypting party which private key to use to decrypt, however, the 
+  party needs to first select the most appropriate key from those 
+  provided in the JWK Set at the recipient's jwks_uri location.
+* To rotate keys, the decrypting party can publish new keys at its 
+  jwks_uri location and remove from the JWK Set those that are being 
+  decommissioned. The jwks_uri SHOULD include a Cache-Control header in 
+  the response that contains a max-age directive, as defined in RFC 
+  2616 [RFC2616], which enables the encrypting party to safely cache 
+  the JWK Set and not have to re-retrieve the document for every 
+  encryption event. The decrypting party SHOULD remove decommissioned 
+  keys from the JWK Set referenced by jwks_uri but retain them 
+  internally for some reasonable period of time, coordinated with the 
+  cache duration, to facilitate a smooth transition between keys by 
+  allowing the encrypting party some time to obtain the new keys. The 
+  cache duration SHOULD also be coordinated with the issuance of new 
+  signing keys, as described in Section 10.1.1.
+
+## Offline Access
+  ```
+  |  "scope" : "openid ... offline_access"
+  |                        └──────┬─────┘
+  |requests issuance of Refresh Token allowing to obtain a new 
+  |Access Token granting access to End-User's UserInfo Endpoint
+  |when the End-User is not present/not logged in. 
+  ```
+  See original RFC for more details.
+
+* All OpenID Providers MUST implement the following features defined in this specification.
+* Signing ID Tokens with RSA SHA-256
+* Preferred Locales
+* Authentication Time
+* Maximum Authentication Age
+* Authentication Context Class Reference
+
+*  Mandatory to Implement Features for Dynamic OpenID Providers
+  * id_token Response Type and all that are not Self-Issued OPs MUST also support
+    the code and id_token token Response Types. 
+  * Discovery
+  * Dynamic Registration
+  * UserInfo Endpoint
+  * Public Keys Published as Bare Keys
+  * Request URI
+
+
+* Implementers should be aware that this specification uses several 
+  IETF specifications that are not yet final specifications, including:
+  * JSON Web Token (JWT) draft -25 [JWT]
+  * JSON Web Signature (JWS) draft -31 [JWS]
+  * JSON Web Encryption (JWE) draft -31 [JWE]
+  * JSON Web Key (JWK) draft -31 [JWK]
+  * JSON Web Algorithms draft -31 [JWA]
+  * Assertion Framework for OAuth 2.0 Client Authentication and Authorization Grants draft -17
+  * JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants draft -10
+
+### Related Specs:
+* OpenID Connect Discovery 1.0
+  Defines how Relying Parties dynamically discover information about OpenID Providers
+* OpenID Connect Dynamic Client Registration 1.0
+  Defines how Relying Parties dynamically register with OpenID Providers
+* OpenID Connect Session Management 1.0 
+  Defines how to manage OpenID Connect sessions, including logout functionality
+* OAuth 2.0 Form Post Response Mode
+  Defines how to return OAuth 2.0 Authorization Response parameters 
+  (including OpenID Connect Authentication Response parameters) using 
+  HTML form values that are auto-submitted by the User Agent using HTTP 
+  POST
+
+### Related implementer's guides:
+* OpenID Connect Basic Client Implementer's Guide 1.0
+* OpenID Connect Implicit Client Implementer's Guide 1.0 [OpenID.Implicit]
 [[}]]
 
 
@@ -658,7 +1574,10 @@ Summarized:
   ```
 
 ## [[{PM.TODO.now]]
-* <https://openid.net/specs/openid-connect-core-1_0.html>
+* OAuth 2.0 Bearer Token Usage [RFC6750] 
+* <https://openid.net/specs/openid-connect-core-1_0.html> @ma
+* OpenID Connect Discovery 1.0 [OpenID.Discovery]
+* OpenID Connect Dynamic Client Registration 1.0
 
 * OAuth 2.0 Threat Model and Security Considerations
   <https://tools.ietf.org/html/rfc6819>
