@@ -1247,11 +1247,196 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
   ```
 [[02_doc_has.comparative}]]
 
+# JWT-Secured Authorization Request (JAR)
+* Part of the OAuth 2.0 Authorization Framework.
+
+* https://datatracker.ietf.org/doc/rfc9101/
+* https://www.rfc-editor.org/info/rfc9101.
+
+* C&P from: https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html
+  * Verifier may send an Authorization Request as Request Object by
+     value or by reference as defined in JWT-Secured Authorization Request 
+
+## Context:
+* Authorization request in OAuth 2.0 described in RFC 6749 utilizes
+  query parameter serialization, which means that authorization request
+  parameters are encoded in the URI of the request and sent through
+  user agents such as web browsers.  Example: 
+  ```
+   GET /authorize?
+    response_type=code&
+    client_id=s6BhdRkqt3&state=xyz&
+    &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb 
+    HTTP/1.1
+   Host: server.example.com
+  ```
+   While it is easy to implement, it means that 
+  * a) the communication through the user agents is not
+       integrity protected and thus, the parameters can be tainted.
+  * b) the source of the communication is not authenticated, and 
+  * c) communication through the user agents can be monitored.
+       Because of these weaknesses, several attacks to the protocol 
+       have now been put forward.
+    TLS mitigates the communication problem but TLS sessions are
+   terminated in the user agent or may be terminated prematurely
+   at some middlebox (such as a load balancer).
+
+* JAR introduces the ability to send request parameters in a
+  JSON Web Token (JWT) instead, which allows the request to be signed
+  with JSON Web Signature (JWS) and encrypted with JSON Web Encryption
+  (JWE) 
+* new parameters introduced in OAuth 2.0 flows.
+  * `request`: JWT whose JWT Claims-Set holds the JSON-encoded 
+    OAuth 2.0 authorization request parameters.  
+    * Note that, in contrast to RFC 7519 (JWT)", the elements of the
+      Claims-Set are encoded OAuth request parameters, supplemented 
+      with only a few of the IANA-managed JWT Claims [IANA.JWT.Claims],
+      (<https://www.iana.org/assignments/jwt>), in particular:
+      "iss" and "aud".
+    * JWT is integrity protected and source authenticated using JWS !!!
+  * `request_uri`: `request` by (Absolute URI) reference, to reduce
+     the size of the transmitted request ("QR" in practice for x-device flows).
+     (Section 5.2)
+
+* Request Object MUST contain all the parameters (including extension)
+  used to process the OAuth 2.0 Auth.Request except 
+   `request` or `request_uri` themself.
+  * JSON strings MUST be encoded using UTF-8 [RFC3629].
+  * JWT Claims Set is defined in JWT [RFC7519].
+    * `iss` and `aud` must be included with `aud` being the Auth.server.
+  * JWT Claims Set is then signed or signed 
+    resulting in a JWS-signed JWT and optionally encrypted resulting 
+    in a Nested JWT.
+* The client (3rd party app, SPA app, verifier in OIDC4VP) can inform 
+  the authorization server of the algorithms that it supports in its
+  dynamic client registration metadata [RFC7591]. [[{PM.TODO}]]
+   
+* A Request Object (Section 2.1) has the media type [RFC2046]
+  `application/oauth-authz-req+jwt` !!!! but some existing
+   deployments may be using `application/jwt`.
+
+* Example Request Object Claim:
+  ```
+  (before base64url [RFC7515] encoding and signing)
+  {
+   "iss": "s6BhdRkqt3",
+   "aud": "https://server.example.com",
+   "response_type": "code id_token",
+   "client_id": "s6BhdRkqt3",
+   "redirect_uri": "https://client.example.org/cb",
+   "scope": "openid",
+   "state": "af0ifjsldkj",
+   "nonce": "n-0S6_WzA2Mj",
+   "max_age": 86400
+  }
+  After RS256 signing base64url encoding:
+  ({"alg":"RS256","kid":"k2bdc"})
+  eyJhbGciOiJSUzI1NiIsImtpZCI6ImsyYmRjIn0.ewogICAgImlzcyI6ICJzNkJoZF
+  JrcXQzIiwKICAgICJhdWQiOiAiaHR0cHM6Ly9zZXJ2ZXIuZXhhbXBsZS5jb20iLAog
+  ICAgInJlc3BvbnNlX3R5cGUiOiAiY29kZSBpZF90b2tlbiIsCiAgICAiY2xpZW50X2
+  lkIjogInM2QmhkUmtxdDMiLAogICAgInJlZGlyZWN0X3VyaSI6ICJodHRwczovL2Ns
+  aWVudC5leGFtcGxlLm9yZy9jYiIsCiAgICAic2NvcGUiOiAib3BlbmlkIiwKICAgIC
+  JzdGF0ZSI6ICJhZjBpZmpzbGRraiIsCiAgICAibm9uY2UiOiAibi0wUzZfV3pBMk1q
+  IiwKICAgICJtYXhfYWdlIjogODY0MDAKfQ.Nsxa_18VUElVaPjqW_ToI1yrEJ67BgK
+  b5xsuZRVqzGkfKrOIX7BCx0biSxYGmjK9KJPctH1OC0iQJwXu5YVY-vnW0_PLJb1C2
+  HG-ztVzcnKZC2gE4i0vgQcpkUOCpW3SEYXnyWnKzuKzqSb1wAZALo5f89B_p6QA6j6
+  JwBSRvdVsDPdulW8lKxGTbH82czCaQ50rLAg3EYLYaCb4ik4I1zGXE4fvim9FIMs8O
+  CMmzwIB5S-ujFfzwFjoyuPEV4hJnoVUmXR_W9typPf846lGwA8h9G9oNTIuX8Ft2jf
+  pnZdFmLg3_wr3Wa5q3a-lfbgF3S9H_8nN3j1i7tLR_5Nz-g
+  ```
+
+  RSA public key in JWK format that can be used to validate the 
+  Request Object signature in this and subsequent Request Object 
+  examples:
+  ```
+  {
+   "kty":"RSA",
+   "kid":"k2bdc",
+   "n":"x5RbkAZkmpRxia65qRQ1wwSMSxQUnS7gcpVTV_cdHmfmG2ltd2yabEO9XadD8
+        pJNZubINPpmgHh3J1aD9WRwS05ucmFq3CfFsluLt13_7oX5yDRSKX7poXmT_5
+        ko8k4NJZPMAO8fPToDTH7kHYbONSE2FYa5GZ60CUsFhSonI-dcMDJ0Ary9lxI
+        w5k2z4TAdARVWcS7sD07VhlMMshrwsPHBQgTatlkxyIHXbYdtak8fqvNAwr7O
+        lVEvM_Ipf5OfmdB8Sd-wjzaBsyP4VhJKoi_qdgSzpC694XZeYPq45Sw-q51iF
+        UlcOlTCI7z6jltUtnR6ySn6XDGFnzH5Fe5ypw",
+   "e":"AQAB"
+  }
+  ```
+
+* Authorization Request:
+  client (App, verifier,...) constructs the Authorization Request
+  URI by adding the following parameters to the query component of
+  the authorization endpoint URI using the 
+  `application/x-www-form-urlencoded` format:
+  * `request`
+  * `request_uri`
+  * `client_id`. It must match that in `request(_uri)`. 
+
+  * client directs the resource owner to the constructed URI using an
+    HTTP redirection response or by other means available to it via the
+    user agent. !!!! Example:
+    ```
+    HTTP 302
+    Location: /authz?client_id=s6BhdRkqt3&request=eyJhbG..AlMGzw HTTP/1.1
+    Host: a.b.com
+
+
+    HTTP 302
+    Location: /authz?client_id=s6BhdRkqt3&
+                    request_uri=https%3A%2F%2Fa.b.com%2Frequest.jwt%2FGkur... HTTP/1.1
+    Host: server.example.com
+
+    ```
+  * client MAY send the parameters included in the Request Object
+    duplicated in the query parameters for backward compatibility,
+    but Auth. Server must ignore them. 
+
+* Signature Algorithm verification MUST be performed by recipients
+  (Auth. SERvers or SIOP Wallets) as specified in Sections 3.1 and 3.2 of [RFC8725].
+  * On failure, they must respond with `invalid_request_object` 
+
+* Authorization Server Response (Wallet in SIOP)
+  * All those in Section 4 of [RFC6749] (OAuth 2.0).
+  * invalid_request_uri
+  * invalid_request_object
+  * request_not_supported
+  * request_uri_not_supported
+
+* Client implementations supporting the Request Object URI method MUST
+  support TLS.
+* HTTP clients MUST also verify the TLS server certificate, using DNS-
+  ID [RFC6125], to avoid man-in-the-middle attacks. 
+*  Support for DNS-ID identifier type (that is, the dNSName identity
+   in the subjectAltName extension) is REQUIRED. 
+
+##  IANA Considerations
+* Since the Request Object is a JWT, the core JWT claims cannot be used
+  for any purpose in the Request Object other than for what JWT
+  dictates. Thus, they have been registered as OAuth authorization
+  request parameters to avoid future OAuth extensions using them with
+  different meanings.
+* OAuth Authorization Server Metadata Registry
+  * Spec add new "require_signed_request_object"
+    indicating where authorization request needs to
+    be protected as Request Object and provided through 
+    either "request" or "request_uri parameter".
+* OAuth Dynamic Client Registration Metadata Registry
+  * Specs add new  "require_signed_request_object" 
+    indicating where authorization request needs to
+    be protected as Request Object and provided 
+    through either "request" or "request_uri parameter".
+
+* See original source, section 10 for Security Considerations.
+* See original source, section 11 for Privacy Considerations
+
 ## [[{PM.TODO.now]]
 * OAuth 2.0 Bearer Token Usage [RFC6750]
 * <https://openid.net/specs/openid-connect-core-1_0.html> @ma
 * OpenID Connect Discovery 1.0 [OpenID.Discovery]
 * OpenID Connect Dynamic Client Registration 1.0
+
+* https://openid.net/sg/openid4vc/specifications/
+* https://openid.github.io/OpenID4VCI/openid-4-verifiable-credential-issuance-wg-draft.html
+* https://openid.github.io/OpenID4VP/
 
 * OAuth 2.0 Threat Model and Security Considerations
   <https://tools.ietf.org/html/rfc6819>
