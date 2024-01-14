@@ -1,4 +1,4 @@
-[[{standards.jwt.troubleshoot,standards.web,use_case.AAA,use_case.signature,02_doc_has.comparative]]
+[[{cryptography.signature.jwt,use_case.signature,02_doc_has.comparative]]
 # JSON Web Token (JWT)
 * <https://tools.ietf.org/html/rfc7519> specification for compact, URL-safe means of REPRESENTING CLAIMS TO
   BE TRANSFERRED BETWEEN TWO PARTIES.
@@ -19,6 +19,11 @@
     detailed list of libraries (Java, Python, C#, Rust,...)
     and other useful info.
 
+* In the context of OAuth, different techniques exists to encode 
+  the JWT, namely: 
+  * query URI parameter (params after '?').
+  * fragment component  (fragemen after '#').
+  * form post.
 * Command line JWT "juggling:
 * REF: <https://github.com/tldr-pages/tldr/blob/master/pages/common/jwt.md>
   ```
@@ -198,161 +203,174 @@
   disclosure and prevent Verifiers from obtaining claims irrelevant for
   the transaction at hand.
 
-
-[[{protocol.OAuth,use_case.AAA,standards.web,]]
-[[02_doc_has.comparative,standards.jwt,02_doc_has.diagram]]
+[[{protocol.OAuth,use_case.Authorization]]
+[[02_doc_has.comparative,cryptography.signature.jwt,02_doc_has.diagram]]
 # OAuth Protocol
 
 * <https://tools.ietf.org/html/rfc6749>
 * <https://alexbilbie.com/guide-to-oauth-2-grants/>
 
-* OAuth TRUST SETUP:
+* OAuth Global Picture. Different applications share the same
+  Authentication logic by using a "central" OAuth Provider.
+  * Thanks to federation support, such companies can also
+    belong to different companies:
+    * OAuth Request.`aud`(ience) parameter and others
+      (Client Dynamic Registration, JWT signatures, ...) are
+      used by the OAuth provider to select identify the originating
+      client.
   ```
-        ············0) Onboards to OAuth ···················
-        ·              provider setting up e-amil,         ·
-        v              e-mail, MFA, biometrics,...         ·
-   │OAuth   │                                              ·
-   │Provider│<···········3) Authenticates Against <···     ·
-     ^  ·                   OAuth Provider obtaining ·     ·
-     ·  ·                   bearer(session)          ·     ·
-     ·  ·                   token                 │Client│··
-     ·  ·                                    (Web Brower,Server/Mobile App
-     ·  ·                                    making requests on behalf of
-     ·  ·                                    the resource owner)
-    authorization.
-     ·  ·                                            ·
-     ·  ·                                            ·
-     ·  ·                                            ·
-     ·  ··>2) Setups Trust·> │Service │<· 4) Access ··
-     ·        relationship   │Provider│    services
-     ·                        (REST API)   from
-     ·                          ·
-     ···1) Delegates <·········─┘
-           User's Authentication to
-           OAuth provider.
-           by registering the app
-           in the pre-setup
-  ```
-
-* Using a gerkins like
-
-  ```
-  | GIVEN
-  |     An Enterprise already has an OAuth Provider (Keycloak, GoTrue,
-  |   Okka, Azure AD,...) in place.
-  | AND
-  | GIVEN
-  |    A Service Provider (developer/s offering an application
-  |   through a remote REST API) wants to delegate authentication and
-  |   authorization to the OAuth Provider in order to avoid duplication
-  |   of repetitive and error prone code logic and functionality.
-  |   For example, duplicating the logic for onboarding new users,
-  |   creating new groups, roles, setting up (complex) MFA, multitenancy,
-  |   user's management control panels, ....
-  | WHEN
-  |    The Service Provider Developer (or Admin) registers the app to
-  |    the existing OAuth provider using a shared secret and and
-  |    Application unique ID
-  |    @startuml
-  |    participant "App Developer" as dev
-  |    participant "OAuth Server"  as OAS
-  |
-  |    dev -> OAS : Register OAuth client
-  |    OAS -> dev : tuple (client.id, client.secret)
-  |    dev -> dev : write in (secret) config file
-  |    @enduml
-  | THEN
-  |    OAuth provider start to trust Authentication-requests comming from
-  |    Users initiated by the trusted REST API.
-  | THEN
-  |    User accesing the REST API can obtain a signed access token from the
-  |    OAuth Provider and attach it to any request to the REST API.
-  | THEN
-  |    On each request from the client, the REST API can validate the signature
-  |    from the bearer token an fetch the information of interest regarding
-  |    authorization.
+  | Note: Client in OAuth
+  |       ············0) Onboards to OAuth ···················
+  |       ·              provider setting up e-amil,         ·
+  |       v              e-mail, MFA, biometrics,...         ·
+  |  │OAuth   │                                              ·
+  |  │Provider│<···········3) Authenticates Against <···     ·
+  |    ^  ·                   OAuth Provider obtaining ·     ·
+  |    ·  ·                   bearer(session)          ·     ·
+  |    ·  ·                   token                          ·
+  |    ·  ·                                    │Client App│···
+  |    ·  ·                          (Web Brower,Server,Mobile
+  |    ·  ·                           App making requests on
+  |    ·  ·                           behalf of resource owner)
+  |    ·  ·                                            ·
+  |    ·  ·                                            ·
+  |    ·  ··>2) Setups Trust·> │Service¹│<· 4) Access ··
+  |    ·        relationship   │Provider│    services
+  |    ·                          ·          from
+  |    ·                          ·
+  |    ···1) Delegates <·········─┘     ¹ Service Provider can be:
+  |          User's Authentication to     - 3rd party REST API (Code Flow Grant)
+  |          OAuth provider.              - Native mobile / SPA app with
+  |          by registering the app         embedded API.
+  |          in the pre-setup             - ...  [[{PM.TODO}]]
   ```
 
-[[{doc_has.key-point]]
-A normal OAuth provider will decouple next two core functionalities:
-1. **User onboarding**
-   * Identifying new users (through biometrics, email/pass, ..)
-   * Providing user with some method to identify itself in
-     future logins.
-2. **Application registration**.
+* OAuth Request/Response Summarized Flow:
+  ```
+  |     ··> (1) Authorization ·> ...  ┐
+  |     ·       Request               ·
+  | ┌───┴────────────┐         ┌───── v ┐                          ○
+  | │Client App or¹ ²│ ·>      │  OAuth │ <·· (2) · user/pass ··> ─┼─
+  | │ just User-Agent│         │Provider│         · MFA           / \
+  | └─┬── ^ ─────────┘         └──────┬─┘         · ....          Final
+  |   ·   ·                           ·                           User
+  |   ·   └······(3) Authorization ··─┘                        (Resource
+  |   ·              Response ("token")                         Owner)
+  |   ·                                                         
+  |   └···> ..... ··> (4) HTTP Request  ···> │ Resource │ REST/gRPC/.. API.
+  |        └──┬──┘    with access_token      │ Server   │
+  |  ┌─······─┘       (access denied if 
+  |  ·                 access_token is invalid due to wrong signature,...)
+  |  ·                                       
+  |  ¹ It can be:             
+  |    - a direct path between OAuth Client App and OAuth provider,
+  |      as in SPA/Native Apps, or 
+  |    - a request to a remote API that finally access the resource.
+  |      In that case the token must be safely shared between OAuth Provider
+  |      and 3rd party API server in a safe way.
+  |      Note: From the OAuth point of view the 3rd party API is the
+  |            Client App and the Client App In this diagram is just an
+  |            (untrusted) User-Agent, not allowed access.
+  | 
+  |  ¹ Final registered applications from service providers (Client Apps or
+  |     3rd-party Service providers) do NOT store password/biometrics locally.
+  |    They just **accept signed proofs of identity or authorization
+  |    from the trusted OAuth Authentication Provider ** (JWT token in practice).
+  |     The signed proof indicates the effecitve roles for a given user.
+  |     Only the Authentication server stores passwords, ...
+  |    In such sense, it acts as a "firewall" or "bastion" or identity central
+  |    controller for the final service providers.
+  ```
 
- Doing so allows the OAuth provider to link users and group of users to
-different applications with different permissions.
+* OAuth Request/Response Summarized Flow:
+  ```
+  ---------------------------------------------------------------
+  * (Sec 4.1) Authorization Code Grant:
+    Only the 3rd party API is authorized, while the User-Agent
+    is not trusted.
+    The OAuth response does NOT return the access-token, just 
+    a *code* to the untrusted User-Agent. then a second Access
+    Token Request/Response is required between
+    3rd party App and OAuth Provider to obtain the access-token.
+  ---------------------------------------------------------------
+  * (Sec 4.2) Implicit Grant:
+    Optimized for public clients known to operate a particular redirection URI.
+    typically implemented in JS in a browser.
+    * access-token is returned directly to the user-agent.
+    * No refresh token is returned since 
+    * Client must be capable of interacting with user-agent 
+      and of receiving incoming requests (via redirection)
+      from the authorization server.
+    * access_token returned directly in Authorization Response.
+    * client authentication is not included relying on the presence
+      of the resource owner and the registration of the redirection 
+      URI.
+    * access token is encoded into the redirection URI, it may be
+      exposed to the resource owner and other applications residing 
+      on the same device.
+  ---------------------------------------------------------------
+  * (Sec 4.3) Resource Owner Password Credentials Grant 
+    * suitable when resource owner has a trust relationship with
+      the client protected by HSM, or highly secured app.
+    * Clients must be capable of obtaining the resource owner's
+      credentials (username/password,...)
+    * Less secure, it must be a last resort when other flows
+      are not viable.
+    * It follows a direct Client/OAuth Provider Request/Response flow. 
+  ---------------------------------------------------------------
+  * (Sec 4.4) Client Credentials Grant 
+    Simplest grant machine-to-machine Authentication
+    An specific user's permission to access data is NOT required.
+  ---------------------------------------------------------------
+  * (Sec 4.5) Extension Grants
+  ---------------------------------------------------------------
+  * Refresh token grant.
 
- A same user can have different permissions in different applications:<br/>
-User A can be "super user" or Administrator of App A, but just a
-"restricted user" of App B while it has absolutely no access to App C.
+  ```
 
-In general, the mapping between onborded users and permission for a given
-app is done through two degrees of indirection.
-1. Application Roles: Each final registered application in the OAuth
-   provider will define a set of roles. Each role assigned to a given
-   user will allow/deny a set of actions in the final application.
-2. Groups of users: For a given app with many users, roles are assigned
-   to groups, and users are registered/unregistered from one or more
-   group, just to simplify administration. A group can mentally map to
-   a department or category. Then roles are assigned by department and
-   users registed/unregistered.
+## User and App Onboarding to OAuth Providers [[{doc_has.key-point]]
+
+* A normal OAuth provider will decouple next two core functionalities:
+  1. **User onboarding**
+     * Identifying new users (through biometrics, email/pass, ..)
+     * Providing user with some method to identify itself in future logins.
+  2. **Application registration**.
+  Doing so allows the OAuth provider to link users and group of users to
+  different applications with different permissions: 
+  * A same user can have different permissions in different applications:<br/>
+    User A can be "super user" or Administrator of App A, but just a
+    "restricted user" of App B while it has absolutely no access to App C.
+
+* In general, the mapping between onborded users and permission for a given
+  app is done through two degrees of indirection.
+  1. Application Roles: Each final registered application in the OAuth
+     provider will define a set of roles. Each role assigned to a given
+     user will allow/deny a set of actions in the final application.
+  2. Groups of users: For a given app with many users, roles are assigned
+     to groups, and users are registered/unregistered from one or more
+     group, just to simplify administration. A group can mentally map to
+     a department or category. Then roles are assigned by department and
+     users registed/unregistered.
 [[doc_has.key-point}]]
 
-* An OAuth client (of OAuth pro can be a normal user or another application.
-  In the later case, OAuth effectively allows applications to access
-  resources in other applications in a restricted and controlled way.
-* Final registered application (Service providers) do NOT store password
-  or biometrics locally, neither they do request for passwords to final
-  users.  They just **accept signed proofs of identity or authorization
-  from the trusted Authentication server** (the JWT token in practice).
-   Such signed proof contains the roles that the Authentication servers
-  has registered for a given user. Only the Authentication server,
-  trusted by different apps stores the password, biometrics, One Time
-  Password secrets, ... In such sense, it acts as a "firewall" or
-  "bastion" or identity controller for the final service providers.
-
-
-### **Formal OAuth entities defined by the protocol**:
-* **Resource Server**: (REST API, gRPC, JSON-RPC,..) server hosting
-  the protected resources validating signed bearer tokens. That is
-  the application providing a final service with business value.
-* **OAuth Client**: Library, browser, component that supports an standar
-  dialog against a OAuth Provider.
-* **Resource owner** : Final user/app interacting with the OAuth Client
-  to access its resources in remote resource server.
-* **access token**   : token signed (by OAuth provider)  with a set of
-  permissions indicating that a given OAuth client has access to a
-  list protected resource/s.
-* **Scope**         : When an app is registered as an OAuth client
-  **to access another existing server app** it indicates what
-  (permission) scopes it wants access to.<br/>
-  For example, my custom App A wants "read contacts" scope to read
-  e-mail contacts from Gmail on behalf of the real user.<br/>
-   In practice, when the user first access the App A, it will be
-  redirected to the OAuth Server and will be prompted to allow or
-  deny "App A" the "read contacts" scope through a popup like UI.
-   Finally issued access-tokens will be limited (scoped) to the
-  to granted -by user- scopes.
-  1. No particular scopes ared defined in OAuth spec
+* `Authorization Request.Scope`:<br/>
+   *  When an app is registered as an OAuth client **to access another
+      existing server app** it indicates what (permission) scopes it
+      wants access to. Ex: <br/>
+      My custom App A wants "read contacts" scope to read
+      e-mail contacts from Gmail on behalf of the real user.<br/>
+   * In practice, when the user first access the App A, it will be
+     redirected to the OAuth Server and will be prompted to allow or
+     deny "App A" the "read contacts" scope through a popup like UI.
+   * Finally issued access-tokens will be limited (scoped) to the
+     to granted -by user- scopes.
+   NOTES 
+   * No particular scopes ared defined in OAuth spec
      (highly dependent on service's internal Architecture)
-  2. The OAuth Server can further limit the set of scopes (permission)
-     granted to App <tools.ietf.org/html/rfc6479#section-3.3>
+   * OAuth Server can further limit the set of scopes (permission)
+     granted to App due to global security policies.
 
-## OAuth "RESOURCE OWNER CREDENTIALS" GRANT
-* Section 4.3 in Spec.
-* "great user experience" for trusted first party clients
-  (web/mobile/native apps vs 3rd party apps)
-
-### PRE-SETUP
-* Final user has been onboarded to OAuth Server.
-* Remote App/API has been registered against OAuth Server with a set of
-  requested scoped. IT department took charge of this.
-* User and Remote App have a link granting user a set of authorizations
-  and roles over the remote App. Probably HHRR or Admin department took
-  charge of this.
-
+## (Sec 4.3) OAuth "RESOURCE OWNER CREDENTIALS" GRANT
   ```
   |                                              ┌──────────────────┐
   |┌──────┐           ┌──────────┐               │OAuth Client      │
@@ -401,10 +419,8 @@ app is done through two degrees of indirection.
   |                                             └──────────────────┘
   ```
 
-## OAuth client credentials grant (M2M)
-* (sect.4.4)
-* simplest oauth 2.0 grants machine-to-machie Authentication
-  where an specific user's permission to access data is NOT required.
+## (sect.4.4) OAuth client credentials grant (M2M)
+*
   ```
   | client -> OAuth Server: POST
   |                         (grant_type, client_id, client_secret, scope)
@@ -417,26 +433,8 @@ app is done through two degrees of indirection.
   | Service -> Service    : Validate signature in access_token
   ```
 
-## REFRESH TOKEN GRANT [[{]]
-* (section1.5)
-  ```
-  | participant "OAuth Server"  as OAS
-  | client -> OAS: POST
-  |                - grant_type
-  |                - refresh_token
-  |                - client_id
-  |                - client_secret
-  |                - scope
-  | OAS -> client: JSON with
-  |                - token_type
-  |                - expires_in
-  |                - access_token
-  |                - refresh_token
-  ```
-[[}]]
-
 ## AUTHORIZATION CODE GRANT (3rd party apps access) [[{]]
-(Section 4.1)
+* (Section 4.1)
 * User want's to use a 3rd party app that simultaneously
   access some resource in an existing app.
 
@@ -489,72 +487,36 @@ app is done through two degrees of indirection.
   ```
 [[}]]
 
+[[protocol.OAuth}]]
 
-## Implicit Grant (WEB browsers) [[{]]
- (SECTION 4.2)
-* similar to AUTHORIZATION CODE GRANT Sec. 4.1 with 2 distinct
-  differences:
-  1. Targeting user-agent-based clients (e.g. single page web apps)
-     that can NOT keep a client secret because all of the application
-     code and storage is easily accessible.
-  2. instead of the OAuth Server returning an authorization
-     code which is exchanged for an access token, the authorization
-     server returns an access token.
+# OpenID Connect [[{protocol.OpenID.connect,use_case.authentication,]]
+* OpenID 2 (precedes OpenID Connect):
+  * created for FEDERATED ("delegated" to 3rd-party) authentication,
+    while don't forcing users to pre-select or negotiate with providers
+    to allow them to employ any other account they have.
+  * 1+ billions OpenID-enabled accounts on the Internet as of 2016.
+  * OIDC2 providers include Google, WordPress, Microsoft, ...
 
-   ```
-   | user → client: request access
-   | client → user: redirect to OAS
-   |                -----------------------
-   |                URL req. param:
-   |                response_type     with the value token
-   |                client_id         with the client identifier
-   |                redirect_uri      Optional. Def.to pre-registered one
-   |                scope             a space delimited list of scopes
-   |                state             (optional but highly recommended)
-   | user → OAS: ...
-   | OAS → OAS: checks...
-   | user ← OAS: request Credentials
-   | user → OAS: login with "credentials" proofs
-   |
-   | user ← OAS: redirect to client
-   |                     -----------------------
-   |                     token_type    "Bearer"
-   |                     expires_in    TTL
-   |                     access_token  the access token itself
-   |                     state         must be compared in client
-   |                                   with the original value
-   |                     ^^^^^^^^^^^^
-   |                     this grant does NOT return
-   |                     refresh token because the browser
-   |                     has no means of keeping it private
-   ```
-[[}]]
+NOTE: Confusingly enough, authorization is also considered some time a
+form of pseudo-authentication and OAuth2 is claimed to be an
+authentication standard while it is designed as Authorization by design.
+(An authorization signed token is a claim that the user is believed
+ to be himself for the act of executing an action or accesing 
+ some resource).
 
-## See also:
-  * @[https://oauth.net/2/]
-  * @[./GoTrue_OAuth.md]
-[[}]]
-
-# OpenID 2 [[{use_case.identity,standards.OpenID]]
-
-
-* over a billion OpenID-enabled accounts on the Internet (2016)
-* Google, WordPress, Yahoo, PayPal use OpenId to authenticate users.
-
-* Confusingly enough, authorization is also considered some time a form
-  of pseudo-authentication and OAuth2 is claimed to be an
-  authentication standard while it is designed as Authorization by design.
-  (An authorization signed token is a claim that the user is believed
-   to be himself for the act of executing an action or accesing some resource).
-
-## OpenID Connect [[{use_case.identity,standards.OpenID]]
 Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
+* OpenID Connect improves over OpenID by allowing end-users to log
+  in once and access "random" remotes resources with an API "friendly"
+  to web and mobile native apps, without the extensions required
+  by OpenID. OID-Connect standardizes:
+  * scopes:
+  * endpoint discovery:
+  * dynamic registration of clients:
 * OpenID Connect (2014) combines the features of OpenID 2.0, OpenID
-  Attribute Exchange 1.0, and OAuth 2.0 in a single protocol.
-* Simple identity layer on top of the OAuth 2.0 protocol, allowing Application
-  clients to obtain End-User identity verifiable (signed) Claims using the new IANA
-  registered JWT **ID Token**.
+  Attribute Exchange 1.0, and OAuth 2.0 in a single protocol, it
+  allowing Application clients to obtain End-User identity verifiable
+  (signed) Claims using the new IANA registered JWT **ID Token**.
 
 ## Nomenclature <!-- { -->
 
@@ -1187,10 +1149,9 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 ### Related implementer's guides:
 * OpenID Connect Basic Client Implementer's Guide 1.0
 * OpenID Connect Implicit Client Implementer's Guide 1.0 [OpenID.Implicit]
-[[}]]
 
 
-## OpenID vs SAML [[{02_doc_has.comparative,use_case.AAA,]]
+## OpenID vs SAML [[{02_doc_has.comparative]]
 
 * Both OpenID vs SAML are different security protocols for single sign-on
   Authorization and Authentication.
@@ -1246,8 +1207,347 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
   └────────────────┴────────────┴─────────────┴─────────────────┘
   ```
 [[02_doc_has.comparative}]]
+[[protocol.OpenID.connect}]]
 
-# JWT-Secured Authorization Request (JAR)
+# OpenID for Verifiable Presentations [[{protocol.OpenID.OIDC4VP]]
+[[use_case.authentication]]
+  ```
+  | Draft 20: (29 November 2023 )
+  | <https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html>
+  | <https://github.com/openid/OpenID4VP>
+  ```
+
+* enables presentation of VCs as Verifiable Presentations on any format 
+  (W3C VCs Data Model, ISO mdoc, and AnonCreds [Hyperledger.Indy], ...)
+* Built on top of OAuth 2.0, reusing:
+  * reuse pre-existing OAuth 2.0 Grant Types (token, code, ...)
+  * reuse pre-existing Response mode: 
+    * #fragment : Redirect with in URI framents   - with vp_token in Authorization (Header?).
+    * ?query    : Redirect with in URI query param- with vp_token in Authorization (Header?).
+    * In that case the new `Authentication Request.response_mode` is also
+      used.  (Otherwise the default #fragment or ?query is used according 
+      to the default used in the grant-type).
+    * Also used to request signing or signing+encrypting. 
+* New `Authentication Request` response types defined in spec: 
+  * `vp_token` and  `vp_token id_token`: (request VPs 
+    in Authorization Responses (standalone or along with a Self-Issued
+    ID Token [SIOPv2]):
+    * A VP Token contains 1+ single Verifiable Presentations in one or
+      different formats.
+* OIDCVP contemplate also cross-device scenarios:
+  ```
+  |      ORIGIN                                         DESTINATION
+  |      OAuth Client ··> OAuth Auth.Request(_uri)¹···> Web browser   
+  |      (Verifier)       (HTTP 302 Redirect)           └────┬────┘
+  |                       #fragment | ?query                 ·
+  |                     · presentation_definition(_uri)      ·
+  |                         (JSON or JWT(optionally encoded) ·
+  |                     · nonce                              ·
+  |                     · scope (optional, mapping by wallet ·
+  |                       to a certain Presentation Definition
+  |                        is out-of-scope in spec           ·
+  |                     · client_id                          ·
+  |                     · client_id_scheme ³                 ·
+  |                     · client_metadata(_uri): Opt. JSON   ·
+  |                     · response_mode: Optional.           ·
+  |                       `direct_post` + request_uri        ·
+  |                       RECOMMENDED for x-device. ⁷        ·
+  |                       def value: default for grant-type  ·
+  |                        (?query | fragment )              ·
+  |                        Same used for "OKs" and errors.   ·
+  |                     · response_type ⁴ ⁶                  ·
+  |                     · aud ⁵                              ·
+  |                                                          ·
+  |  ┌······················································─┘
+  |  ·                                                 
+  |  └·> Web Browser  ··> QR Code ··················>·· Mobile App.
+  |                      (Tipically Auth.Req.URI)       ·         ·                  
+  |                                                     ·         ·                  
+  |  ┌··················································┴─────────┘
+  |  ·                                                 
+  |  └·> Mobile App.² ··> OAuth Auth.Response ⁶ ·······> OAuth Client
+  |                     Form POST                      
+  | 
+  |  Authentication Request travels across devices (Brower -> Mobile)
+  |  and the Response is "POSTED" from the destination device.
+  |
+  |  ¹ Verifier sends either the  Authorization Request Object or 
+  |    a reference as defined in JWT-Secured Authorization Request 
+  |    (JAR) [RFC9101]. !!!!
+  |    Non normative Authorization Request URI (that can be displayed
+  |    to the End-User either directly (as a link) or as a QR Code:
+  |    
+  |    https://wallet.example.com?
+  |        client_id=https%3A%2F%2Fclient.example.org%2Fcb
+  |        &request_uri=https%3A%2F%2Fclient.example.org%2F567545564
+  |
+  |  ² Wallet processes the Auth. Request against existing VCs 
+  |    and confirms presentation with final user that will pick what
+  |    to present. Wallet is also in charge of authenticating the 
+  |    End-User (fingerprint, key-pass, ...).
+  |
+  |  ³ How the client id must be checked by wallet (DNS, did, ...)
+  |    Depending on Scheme, the Client can also attach a JSON with
+  |    its client_metadata(_uri) as defined in Sec. 4.3&2.1 of OpenID 
+  |    Connect Dynamic Client Registration 1.0. 
+  |
+  |  ⁴ respone_type==vp_token => a successful response MUST include
+  |    the vp_token param. and not SHOULD NOT return an OAuth 2.0
+  |    Authorization Code, Access Token, or Access Token Type.
+  |    vp_token => signature and optional encryption.
+  |    The default Response Mode for this Response Type is #fragment
+  |    with `Authorization Response` parameters encoded in 
+  |    #fragment added to the redirect_uri  (@Verifier)
+  |    
+  |  ⁵ `aud` value depends on whether recipient can be identified by
+  |     the Verifier or not:
+  |     Dynamic Discovery is performed => aud==issuer Claim value
+  |     Static Discovery metadata used => aud==https://self-issued.me/v2 
+  | 
+  |  ⁶ VP Token can be returned in Authorization Response or Token Response 
+  |   depending on the Response Type used.
+  |   *    response_type == vp_token          => VP Token returned in Authorization Response 
+  |   *    response_type == vp_token id_token => VP Token returned in Authorization Response
+  |      && scope contains openid                alongside a Self-Issued ID Token 
+  |   * Response Type value ==  code          => VP Token returned in Token Response
+  | 
+  |   When VP Token is returned, the OAuth Authen. response MUST include 
+  |   the following REQUIRED parameters:
+  |   * `vp_token`: JSON Object with
+  |     alt 1.   Verifiable Presentation
+  |     alt 2.  [Verifiable Presentation list]  (as JSON Array)
+  |   * `presentation_submission`: mappings between requested VCs and where to
+  |      find them in returned VP Token.<br/>
+  |      (See original doc for details)
+  |      Other presentation_submission inside the VP Token must be ignored by
+  |       Clients, since it must be processed in advance to the VP Token.
+  |
+  |  ⁷ `response_mode=direct_post`. New in spec. POST to URL@Verifiers
+  |    `response_mode=direct_post.jwt` => User jARM in Response 
+  direct_post.
+  |    It also fix issues with big vp_tokens.
+  |    Authorization Response params. encoded in body using
+  |    `application/x-www-form-urlencoded` content type. 
+  |    The flow can ends after the POST, or continue if 
+  |    if Verifier responds to POST with a redirect URI.
+  |    * The new Authorization Request parameter is defined to be 
+  |      used in conjunction with Response Mode direct_post:
+  |      * `response_uri`: "CONDITIONAL". MUST be present in `direct_post`
+  |        indicating where to POST the response.
+  |      * `redirect_uri` MUST NOT be present in this case!!!
+  |        Otherwise, wallets MUST return invalid_request Authorization Response error.
+  |        If client_id_scheme == redirect_uri, client_id must be the response_uri
+  | 
+  |  ⁸ Verifier has the choice of the following mechanisms to invoke a Wallet:
+  |    * Custom URL scheme as an authorization_endpoint (ex: openid4vp:// )
+  |    * Domain-bound Universal Links/App link as an authorization_endpoint.
+  |    * no specific authorization_endpoint.
+  |    * user scanning a QR code with Authorization Request using a manually opened Wallet,
+  ```
+## non-normative OIDC4VP OAuth Request extension examples: 
+* Ex/Alt 1: Non-JWT-Secured Authorization Request (JAR):
+  ```
+  GET /authz?
+    response_type=vp_token
+    &client_id=https%3A%2F%2Fclient.example.org%2Fcb
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+    &presentation_definition=...
+    &nonce=n-0S6_WzA2Mj HTTP/1.1
+  ```
+* Ex/Alt 2. JWT-Secured Authorization Request (JAR) + request 
+  ```
+  | HTTP 302
+  | Location: /authz?
+  |           client_id=s6BhdRkqt3
+  |          &request=eyJhbG..AlMGzw HTTP/1.1
+  | Host: a.b.com
+  ```
+* Ex/Alt 3. JWT-Secured Authorization Request (JAR) + request _uri
+  ```
+  | HTTP 302
+  | Location: /authz?client_id=s6BhdRkqt3&
+  |           request_uri=https%3A%2F%2Fa.b.com%2F... HTTP/1.1
+  | Host: server.example.com
+  ```
+## 5.1. presentation_definition(_uri) Parameter:
+  (See original doc, Sec. 5.1 for examples of presentation_definition) 
+
+
+* Wallet metadata.vp_formats_supported: VC and VP formats supported by Wallet
+  (SIOP Wallet do not annuence anything?).
+* Verifier metadata: Section 9.1
+  * Client metadata defined in Section 2 of [RFC7591] is used plus ...
+  * `vp_formats`: formats supported. Wallet MUST ignore formats inside
+                Presentation_definition not included in vp_formats
+                See Apendix A in spec for specific values that can be returned.
+  * `client_id_scheme`: mechanisms use to obtain and validate metadata
+    of the Verifier beyond the scope of [RFC6749]. Defined values include: 
+    * pre-registered: default behavior. Client Identifier needs to be known
+      to the Wallet in advance of the Authorization Request.
+    * redirect_uri: client id value == redirect_uri. Auth.Request MUST NOT be signed.
+    * entity_id: Client Id is an Entity Identifier defined in OpenID Federation. 
+    * did: Client Id is a DID => Request MUST be signed with Controller Key of DID.
+      * NOTE: `kid` must be used to select one public key when DID-Document has N 
+        valid ones.
+* non-normative example of a JWT for a signed Auth.Request with 
+  client_identifier_scheme == did
+  ```
+  | // HEADER:
+  | { "typ": "oauth-authz-req+jwt", "alg": "RS256", "kid": "did:example:123#1" }
+  | // BODY:
+  | {
+  |   "client_id": "did:example:123",
+  |   "client_id_scheme": "did",
+  |   "response_types": "vp_token",
+  |   "redirect_uri": "https://client.example.org/callback",
+  |   "nonce":"n-0S6_WzA2Mj",
+  |   "presentation_definition": "...",
+  |   "client_metadata": {                        <·· Do not include if dynamic registracion has been done
+  |     "vp_formats": {
+  |       "jwt_vp": { "alg": [ "EdDSA", "ES256K" ] },
+  |       "ldp_vp": { "proof_type": [ "Ed25519Signature2018" ] }
+  |     }
+  |   }
+  | }
+  ```
+  * `verifier_attestation`: allows to authenticate the Verifier against JWTs bound to
+    a certain Pub.key.
+  * `x509_san_dns`: Client Identifier type == DNS name. 
+  * `x509_san_uri`: Client Identifier type == URI. 
+
+## Authentication Response ("VP Token").
+
+* non-normative example of an Authorization Response for
+  `Authorization Request.Response Type == vp_token`
+  ```
+  | HTTP/1.1 302 Found
+  | Location: https://client.example.org/cb#
+  |   presentation_submission=...
+  |   &vp_token=...
+  ```
+* See original doc for examples of VP Tokens with 1 or N VP.
+
+* non-normative example of Authorization Response sent via HTTPS POST request 
+  to the Verifier's Response Endpoint:
+  ```
+  | POST /post HTTP/1.1
+  |   Host: client.example.org
+  |   Content-Type: application/x-www-form-urlencoded
+  |
+  |   presentation_submission=...&
+  |   vp_token=...&
+  |   state=eyJhb...6-sVA
+  ```
+* non-normative example of response using presentation_submission and vp_token
+  values.  (OAuth 2 JARM using JWT)
+  ```
+  | POST /post HTTP/1.1
+  |   Host: client.example.org
+  |   Content-Type: application/x-www-form-urlencoded
+  |
+  |   response=eyJra...9t2LQ
+  | ┌─········─┴───────────┘ 
+  | non-normative example of signed JWT payload               non-normative example of signed JWT payload
+  |                                                           encrypted and not signed.
+  | (before base64url encoding+signing)                        (before base64url encoding+signing)
+  | {                                                         {
+  |   "iss": "did:example:ebfeb1f712ebc6f1c276e12ec21",       
+  |   "aud": "https://client.example.org/cb",                 
+  |   "exp": 1573029723,                                      
+  |   "vp_token": "eyJhb...YMetA",                              "vp_token": "eyJhb...YMetA",
+  |   "presentation_submission": {                              "presentation_submission": {
+  |     "definition_id": "example_jwt_vc",                        "definition_id": "example_jwt_vc",
+  |     "id": "example_jwt_vc_presentation_submission",           "id": "example_jwt_vc_presentation_submission",
+  |     "descriptor_map": [                                       "descriptor_map": [
+  |       {                                                         {
+  |         "id": "id_credential",                                    "id": "id_credential",
+  |         "path": "$",                                              "path": "$",
+  |         "format": "jwt_vp",                                       "format": "jwt_vp",
+  |         "path_nested": {                                          "path_nested": {
+  |           "path": "$.vp.verifiableCredential[0]",                   "path": "$.vp.verifiableCredential[0]",
+  |           "format": "jwt_vc"                                        "format": "jwt_vc"
+  |         }                                                         }
+  |       }                                                         }
+  |     ]                                                         ]
+  |   }                                                         }
+  | }                                                         }
+  ```
+* Non normative response to POST using the new in spec `redirect_uri` (optional) parameter:
+  (if not present the flow is finished and wallet is free to change the UI at will).
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json;charset=UTF-8
+  Cache-Control: no-store
+
+  {
+    "redirect_uri":"https://client.example.org/cb#response_code=091535f699ea575c7937fa5f0f454aee"
+  }
+  ```
+  * When redirect_uri is present the Wallet MUST send the User Agent to the destination.
+    as to allow the Verifier to continue the interaction with the End-User.
+    (It especially enables the Verifier to prevent session fixation attacks)
+  
+
+## Signed and Encrypted Responses
+  (Sec 6.3 in spec)
+* Auth request.respone_type == "vp_token" ||  "vp_token id_token"
+* Implementations MAY use JWT OAuth 2.0 Secured Authorization Response Mode (JARM).
+  (in a "symmetric" way to how JWT Authentication Request JAR can be used for requests)
+* NOTE: Encrypting but not signing the Auth. Response prevents the signing key from
+  being used as a correlation factor. 
+* See original doc (Sec 6.3) for remarks on JWT encrypted (JWE) but not signed.
+* key material used for encryption and signing SHOULD be determined using existing
+  metadata mechanisms.
+  To obtain Verifier's public key for the input to the key agreement to encrypt the
+  Authorization Response, the Wallet MUST use jwks(_jwks_uri) claim within the
+  client_metadata request parameter, or within the metadata defined in the Entity
+  Configuration when [OpenID.Federation] is used, or other mechanisms.
+* To sign the Authorization Response, the Wallet MUST use a private 
+  key that corresponds to a public key made available in its metadata.
+* See section 6.4 in spec for details on possible Error Responses codes returned by the wallet
+* See section 6.5 in spec. for VP Token Validation details.
+* See section   8 in spec for Wallet (Authorization Server) Metadata details.
+* Section 10, Verifier Attestation JWT, especially designed to allow a
+  Wallet to authenticate a Verifier in a secure and flexible manner. 
+  (See original spec).
+  Q: What is the relation to  client_id_scheme [[{PM.TODO}]] 
+* See Sect 11 in spec for details Implementation Considerations
+  * non-normative example of a set of static configuration values that
+    can be used with vp_token parameter as a supported Response Type,
+    bound to a custom URL scheme openid4vp:// as an Authorization Endpoint:
+    ```
+    | {
+    |   "authorization_endpoint": "openid4vp:",
+    |   "response_types_supported": [ "vp_token" ],
+    |   "vp_formats_supported": {
+    |     "jwt_vp_json": { "alg_values_supported": ["ES256"] },
+    |     "jwt_vc_json": { "alg_values_supported": ["ES256"] }
+    |   },
+    |   "request_object_signing_alg_values_supported": [ "ES256" ]
+    | }
+    ```
+   * Sect. 11.2. Support for Federations/Trust Schemes
+   * 11.3. Nested Verifiable Presentations
+   * 11.4. State Management
+   * 11.5. Response Mode direct_post
+```
+* See 12. in spec Security Considerations details:
+
+* See Appendix A in spec for Examples with Credentials in Various Formats
+  ```
+  | A.1. W3C Verifiable Credentials
+  | A.1.1. VC signed as a JWT, not using JSON-LD
+  | A.1.2. LDP VCs, Example Credential Presentation Request & Response
+  | A.2. AnonCreds (Hyperledger Indy)
+  | A.3. ISO mobile Driving License (mDL) !!!
+  | A.3.1. Presentation Request
+  | A.3.2. Presentation Response
+  | A.4. Combining this specification with SIOPv2 [[{PM.TODO}]]
+  ```
+[[protocol.OpenID.OIDC4VP}]]
+
+[[{Protocol.OAuth.JAR,cryptography.signature.jwt,cryptography.encryption.jwe]]
+# OAuth (JWT)Secured Authorization Request (JAR)
 * Part of the OAuth 2.0 Authorization Framework.
 
 * https://datatracker.ietf.org/doc/rfc9101/
@@ -1427,12 +1727,106 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
 * See original source, section 10 for Security Considerations.
 * See original source, section 11 for Privacy Considerations
+[[Protocol.OAuth.JAR}]]
 
-## [[{PM.TODO.now]]
+# OAuth (JWT)Secured Authorization Response Mode  (JARM) [[{Protocol.OAuth.JARM]]
+* REF: <https://openid.net/specs/oauth-v2-jarm.html>
+
+* JWT-based mode to encode OAuth authorization responses
+  enhancing the security with support for signing and optional
+  encryption.
+* JWT always contains:
+  * `iss`: issuer 
+  * `aud`: OAuth client_id this response is intended for.
+  * `exp`: expiration of the JWT. (10 min max is RECOMMENDED).
+  * authorization endpoint response parameters as defined for
+    the particular response types.
+    * For example Response for grant type authorization "code" 
+      requires the extra `code` and `state` claims.
+  * Error response params if appropiate:
+    error (code), error_description and  error_uri. 
+* Signing + encrypting results in a nested JWT.
+
+* Response Modes:
+  * Response Mode "query.jwt" example:
+    ```
+    HTTP/1.1 302 Found
+    Location: https://client.example.com/cb?response=eyJra... JWT token ...
+    ```
+    * WARN: "query.jwt" response mode MUST NOT be used in conjunction 
+      with response types that contain "token" or "id_token" unless
+      the response JWT is encrypted to prevent token leakage in the URL.
+  * Response Mode "query.jwt" example:
+    ```
+    HTTP/1.1 302 Found
+    Location: https://client.example.com/cb#response=eyJra... JWT token ...
+    ```
+  * Response Mode "form_post.jwt" example:
+    ```
+    | HTTP/1.1 200 OK
+    | Content-Type: text/html;charset=UTF-8
+    | Cache-Control: no-cache, no-store
+    | Pragma: no-cache
+    | 
+    | <html>
+    |  <head><title>Submit This Form</title></head>
+    |  <body onload="javascript:document.forms[0].submit()">
+    |   <form method="post" action="https://client.example.com/cb">
+    |     <input type="hidden" name="response"
+    |      value="eyJraW ... JWT token ... " />
+    |     </form>
+    |    </body>
+    |   </html>
+    | <!-- form auto-submitted in the User Agent in
+    |      "application/x-www-form-urlencoded" format like:
+    |      POST /cb HTTP/1.1
+    |      Host: client.example.org
+    |      Content-Type: application/x-www-form-urlencoded
+    |      
+    |      response=eyJraW JWT Token ...
+    ```
+
+* Response Mode "jwt" defaults to redirect default encoding:
+  query.jwt for `code` and fragment.jwt for `token` and response types
+  defined in "OAuth 2.0 Multiple Response Type Encoding Practices""
+  
+## Processing rules
+* client decrypts the JWT using the default key for the respective issuer or,
+  if applicable, determined by the kid JWT header parameter. 
+* The key might be a private key, where the corresponding public key is
+  registered with the expected issuer of the response.
+* check iss: well known, identifies the expected issuer.
+* check aud matches client id
+* checks exp 
+* check signature. 
+* check CSRF detection ... (out of scope of this specification).
+* The following client metadata parameters in the Dynamic Client
+  Registration Protocol are introduced by this specification:
+  * `authorization_signed_response_alg`: REQUIRED
+  * `authorization_encrypted_response_alg`: REQUIRED
+  * `authorization_encrypted_response_enc`: REQUIRED
+  NOTE: `jwks_uri` or `jwks metadata` parameters can be used by
+     clients to register their public encryption keys.
+
+* Authorization Server Metadata:
+  (Check original doc for more info) 
+  new params are included:
+  * `authorization_signing_alg_values_supported`    OPTIONAL
+  * `authorization_encryption_alg_values_supported` OPTIONAL
+  * `authorization_encryption_enc_values_supported` OPTIONAL
+
+* See original doc for details on Security Considerations
+[[Protocol.OAuth.JARM}]]
+
+# TODO/Non-Classified [[{PM.TODO.now]]
 * OAuth 2.0 Bearer Token Usage [RFC6750]
 * <https://openid.net/specs/openid-connect-core-1_0.html> @ma
 * OpenID Connect Discovery 1.0 [OpenID.Discovery]
 * OpenID Connect Dynamic Client Registration 1.0
+  <https://openid.net/specs/openid-connect-registration-1_0.html>
+* Dynamic Client Registration Protocol [RFC7591] defines an API  
+  for dynamically registering OAuth 2.0 client metadata with
+  authorization servers. [[{PM.TODO.now}]]
 
 * https://openid.net/sg/openid4vc/specifications/
 * https://openid.github.io/OpenID4VCI/openid-4-verifiable-credential-issuance-wg-draft.html
@@ -1440,4 +1834,7 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
 * OAuth 2.0 Threat Model and Security Considerations
   <https://tools.ietf.org/html/rfc6819>
+
+OThers:
+* @[https://oauth.net/2/]
 [[}]]
