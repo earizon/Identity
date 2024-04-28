@@ -1,4 +1,4 @@
-# Dex:   [[{01_PM.low_code]]
+# Dex [[{01_PM.low_code,stack.dex,protocol.OAuth,protocol.OIDC]]
 
 * <https://github.com/dexidp/dex> (7.8K starts in Github as of 2023-01)
 * Light KeyCloak/Oak/... alternitive.

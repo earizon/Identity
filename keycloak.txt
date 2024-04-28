@@ -1,4 +1,23 @@
-# keycloak modules
+# keycloak [[{]]
+
+* <https://www.keycloak.org/>
+* <https://medium.com/keycloak/keycloak-essentials-86254b2f1872> 
+* <https://medium.com/keycloak/keycloak-realm-client-configuration-dfd7c8583489>
+
+* Identity Provider "Hub".
+* Advanced features include:
+  * User Federation.
+  * Identity Brokering.
+  * low-code Social Login.
+  * Single-Sign On: Login once to multiple applications   
+  * OAuth 2.0/OpenID Connect IdP.
+  * SAML 2.0 IdP.
+  * LDAP and Active Directory
+  * Clustering for scalability and availability
+  * Extensible through code
+  * Customizable password policies.
+
+## keycloak modules
 
 * REF:<https://developers.redhat.com/blog/2019/12/11/keycloak-core-concepts-of-open-source-identity-and-access-management#wrapping_up>
   ```
@@ -1867,3 +1886,4 @@ Example Realm JSON config: (C&P from book "Cloud Native Spring in Action" )
     }
   }
   ```
+[[}]]

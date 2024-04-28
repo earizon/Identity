@@ -1,7 +1,140 @@
 [[{cryptography.signature.jwt,use_case.signature,02_doc_has.comparative]]
-# JSON Web Token (JWT)
-* <https://tools.ietf.org/html/rfc7519> specification for compact, URL-safe means of REPRESENTING CLAIMS TO
-  BE TRANSFERRED BETWEEN TWO PARTIES.
+
+# OAuth "Zipped" Summary.
+
+* OAuth provides a method for clients (mobile apps, server apps or 
+  Javascript apps) to access a protected resource (a file, a bank 
+  account, an identity credential, ...) on behalf of a resource owner
+  (the citizen owning the the file, bank account, identity, or maybe
+  another third party app, ...)
+* For Clients to access the protected resource, they must:
+  1. obtain an **authorization grant** from the resource owner.
+  2. Exchange the authorization grant for an inmutable **access token**.
+  3. Use the access token to access the protected resource with 
+     the privileges up to those written down in the access token.
+     "Use the access token" in practice means that the client 
+     attachs the token as a Bearer token in the Authentication HTTP header.
+
+* The inmutable access token contains:
+  * the grant's scope authorized by the resource owner.
+  * expiration time.
+  * other attributes granted by the authorization grant.
+
+* In simple scenarios (machine 2 machine) the client app can presents
+  its own credentials to the authorization server to obtain the
+  access token without having to first obtain an authorization grant 
+  from a resource owner.
+
+* The access token provides an abstraction, replacing different
+  authorization constructs (e.g., user/password, assertion, signature, ...)
+  for a single token understood by the resource server.<br/>
+   This abstraction enables issuing access tokens valid for a short time 
+  period, as well as removing the resource server's need to understand a
+  wide range of authentication schemes.[[{doc_has.keypoint}]]
+
+  ```
+  |           ABSTRACT   PROTOCOL   FLOW
+  |┌────────┐                               ┌───────────────┐
+  |│        ├──(A)─ Authorization Request¹─>│Resource Owner │
+  |│        │<─(B)──── Authorization Grant ─┤(Citizen,SaaS) │
+  |│        │                               └───────────────┘
+  |│ Client │                               ┌───────────────┐
+  |│(Mobile,├──(C)─── Authorization Grant ─>│ Authorization │
+  |│ server,│<─(D)─────────── Access Token ─┤ Server (IdP)  │
+  |│ JS app)│                               └───────────────┘
+  |│        │                               ┌───────────────┐
+  |│        ├──(E)─ Access Token ──────────>│ Resource Srv  │
+  |│        │<─(F)───── Protected Resource ─┤ (Bank,mail,..)│
+  |└────────┘                               └───────────────┘
+  | 
+  | ¹ In practice, the Authorization Request and Grant is also
+  |   "orchestrated" by the Authorization Server since 
+  |   clients and Resource Owners don't know/don't trust each
+  |   other.
+  |    The Authorization Server will include custom security
+  |   services and protocols (TLS, 2FA, ...) to identify the
+  |   (pre-registered) client and the Resource Owner "Citizen".
+  ```
+
+* <https://oauth.net/> [[{PM.TODO}]]
+  (source at: <https://github.com/aaronpk/oauth.net>)
+
+## JWS (RFC 7515) <!-- { -->
+* REF: <https://tools.ietf.org/html/rfc7515>
+
+* JSON Web Signature (JWS) represents content secured with digital
+  signatures or Message Authentication Codes (MACs) using JSON-based
+  data structures.<br/>
+   Related cryptographic algorithms and identifiers are described
+  in the JSON Web Algorithms (JWA) spec. 
+* JWT (JWS) structure:
+  ```
+  | xxxxx.yyyyyyyyyyyyyyyyyyy.zzzzz ← Base64URL encoded
+  | ^     ^                   ^     ↖
+  | │  ┌──┘                   │      ☞ format more compact when compared to
+  | │  │  ┌───────────────────┘        XML-based standards such as SAML.
+  | │  │  │
+  | │  │  SIGNATURE
+  | │  │             └ (with shared_secret or priv.key)
+  | │  │               (Using signature algorithm of HEADER)
+  | │  PAYLOAD
+  | │  - claims about an entity + additional data.
+  | │
+  | │  - types of claims
+  | │    - registered : non mandatory but recommended for interoperability:
+  | │      (mandatory 
+  | │       "jti" (JWT ID) Claim
+  | │       "iss" (issuer)
+  | │       "exp" (expiration time)
+  | │       "iat" (Issued At)
+  | │       "sub" (subject)
+  | │       "aud" (aud)ience of the token, i.e., the "web app" that is meant to
+  | │             be the final recipient of the token. eg.: In the case of an
+  | │             ID token, its value is the client ID of the application that
+  | │             should consume the token.
+  | │       "nbf" (Not Before)
+  | │
+  | │
+  | │    - public     : Defined at will. To avoid collisions they should be defined
+  | │                   in the IANA JSON Web Token Registry or be defined as a URI
+  | │                   that contains a collision resistant namespace.
+  | │
+  | │    - private    : custom claims between parties
+  | │
+  | HEADER typically consists of:
+  | {
+  |   "alg": "HS256", ← signing algorithm used (HMAC SHA256, RSA, ECDSA...)
+  |   "typ": "JWT"    ← type of tokern (JWT)
+  | }
+  ```
+
+* A common JWT ussage pattern involves client sending the JWT in the
+  HTTP Authorization header using the Bearer-schema:
+  ```
+  Authorization: Bearer <token>
+  ( Stateless authorization )
+  ```
+
+* KEY-POINT: By sending in the Authorization header, Cross-Origin Resource Sharing
+  (CORS) won't be an issue as it doesn't use cookies.
+
+[[{02_doc_has.comparative]]
+* Signing XML with XML Digital Signature is very complex and
+  error prone when compared to the simplicity of signing JSON.
+[[}]]
+<!-- } -->
+
+
+# JWT (RFC 7519) <!-- { -->
+* <https://tools.ietf.org/html/rfc7519> 
+* specification for compact, **URL-SAFE** means of REPRESENTING
+  CLAIMS TO BE TRANSFERRED BETWEEN TWO PARTIES, commonly used 
+  to representing OAuth 2.0 authentication tokens ("access_token")
+  and OpenID Connect Identity tokens ("id_token").<br/>
+
+
+* In practice: A JWT is a JWS structure with a JSON object as the payload.
+  and some optional predefined claims (JSON keys) such as iss, aud, exp, ...
 * claims are encoded as a JSON object used as:
   * the payload of a JSON Web Signature (JWS) structure
     enabling the claims to be digitally signed using either:
@@ -11,20 +144,88 @@
     enabling the claims to be integrity protected with a
     Message Authentication Code (MAC) and/or encrypted.
 
-* External Refs:
-  * (Very Good) Introduction to JWT!!!
-    @[https://jwt.io/introduction/]
-    @[https://jwt.io/#debugger]
-  * online JWT debugger to decode, verify and generate JWT,
-    detailed list of libraries (Java, Python, C#, Rust,...)
-    and other useful info.
+## JWT Best Patterns [[{qa.101]]
+* <https://www.ietf.org/rfc/rfc8725.html>
+* Best patterns for JWT (and underlying JWS, jWE and JWA).
+  (considered "floor", not "ceiling").
+* Perform Algorithm Verification. Library MUST ensure that
+  "alg" and/or "enc" headers specifies the same algorithm used
+  for the cryptographic operation. 
+* EACH KEY MUST BE USED WITH EXACTLY ONE ALGORITHM:
+  and this MUST be checked when the cryptographic operation 
+  is performed.
+* Use and Validate Audience:
+* Issuers issuing JWT for different applications/relying
+  parties, must include the "aud" (audience) claim and
+  applications/relying parties validating the incomming
+  JWT MUST validate such audience value.
+* Do Not Trust Received Claims:
+  * Ensure that the "kid" (key ID) header is used only
+    to perform key lookup. In particular ensure that it 
+    does NOT create SQL or LDAP injection vulnerabilities
+    by validating and/or sanitizing the received value.
+  * Similarly, blindly following a "jku" (JWK set URL) or
+    "x5u" (X.509 URL) header, which may contain an arbitrary
+    URL, could result in server-side request forgery (SSRF)
+    attacks. A pre-configured "allowed URL list" must be used.
+* Use Explicit Typing for JWT instances. For instance, 
+  Security Event Tokens (RFC8417) will use 
+  "application/secevent+jwt" for the media type and
+  "secevent+jwt" for the for the "typ" value.
+* Use Mutually Exclusive Validation Rules for Different Kinds of JWTs
+  (required and optional claims)
+* To prevent substitution of JWTs from one context into another,
+  application developers may employ a number of strategies:
+  * Use explicit typing for different kinds of JWTs.
+  * Use different sets of required claims or different required
+    claim values. 
+  * Use different sets of required Header Parameters or different
+    required Header Parameter values.
+  * Use different keys for different kinds of JWTs.
+  * Use different "aud" values for different uses of JWTs.
+  * Use different issuers for different kinds of JWTs.
 
-* In the context of OAuth, different techniques exists to encode 
-  the JWT, namely: 
-  * query URI parameter (params after '?').
-  * fragment component  (fragemen after '#').
-  * form post.
-* Command line JWT "juggling:
+### OAuth/OpenID-Connect related JWT Best-Patterns
+* OpenID-Connect compliant web-apps will go through the
+  `/oauth/authorize` endpoint using the authorization code flow.
+* Secret information use JWE.
+* Do not store JWT inside localStorage or session storage in
+  web browsers ("user-agents" using OAuth nomenclature) since 
+  it's accessible by any script (XSS attack/compromised page).
+  Preffer `httpOnly` cookies stores: Cookies only sent in
+  HTTP requests back to the server and never accessible to JS.
+* Don't use JWT as Sessions since it's error prone.
+* In the context of OAuth (see next), the JWT is ussually 
+  encode as ¹: [[{doc_has.key_point}]]
+  * query URI parameter (params after '?'). Example:
+    ```
+    | https://...?access_token=${JWT_ACCESS_TOKEN}
+                  └──────────┴─ JWT token type
+    ```
+  * fragment component. Example:
+    ```
+    | https://...#access_token=${JWT}
+                  └──────────┴─ JWT token type
+    ```
+  * form post. Example:
+    ```
+    | POST /resource HTTP/1.1
+    | Host: server.example.com
+    | Content-Type: application/x-www-form-urlencoded
+    |
+    | access_token=${JWT_ACCESS_TOKEN}
+    ```
+  * Bearer token in authorization Header
+    (just for the broadly used JWT access_token vs any other
+     JWT representing claims, ...)
+    ```
+    | Authorization: Bearer ${JWT_ACCESS_TOKEN}
+  ¹ Remember: JWT has been designed to be URL-safe 
+    ```
+[[qa.101}]]
+
+## Command line JWT "juggling":
+
 * REF: <https://github.com/tldr-pages/tldr/blob/master/pages/common/jwt.md>
   ```
   | $ jwt decode {{jwt_string}}       ←  Decode a JWT.
@@ -39,103 +240,52 @@
   |  -P key=value
   ```
 
-## JWT (JWS) structure
-  ```
-  xxxxx.yyyyyyyyyyyyyyyyyyy.zzzzz ← Base64URL encoded
-  ^     ^                   ^     ↖
-  │  ┌──┘                   │      ☞ format more compact when compared to
-  │  │  ┌───────────────────┘        XML-based standards such as SAML.
-  │  │  │
-  │  │  SIGNATURE
-  │  │             └ (with shared_secret or priv.key)
-  │  │               (Using signature algorithm of HEADER)
-  │  PAYLOAD
-  │  - claims about an entity + additional data.
-  │
-  │  - types of claims:
-  │    - registered : non mandatory but recommended for interoperability:
-  │       "jti" (JWT ID) Claim
-  │       "iss" (issuer)
-  │       "exp" (expiration time)
-  │       "iat" (Issued At)
-  │       "sub" (subject)
-  │       "aud" (aud)ience of the token, i.e., the "web app" that is meant to
-  │             be the final recipient of the token. eg.: In the case of an
-  │             ID token, its value is the client ID of the application that
-  │             should consume the token.
-  │       "nbf" (Not Before)
-  │
-  │
-  │
-  │
-  │
-  │
-  │    - public     : Defined at will. To avoid collisions they should be defined
-  │                   in the IANA JSON Web Token Registry or be defined as a URI
-  │                   that contains a collision resistant namespace.
-  │
-  │    - private    : custom claims between parties
-  │
-  HEADER typically consists of:
-  {
-    "alg": "HS256", ← signing algorithm used (HMAC SHA256, RSA, ECDSA...)
-    "typ": "JWT"    ← type of tokern (JWT)
-  }
-  ```
-
-* A common JWT ussage pattern involves client sending the JWT in the
-  HTTP Authorization header using the Bearer-schema:
-  ```
-  Authorization: Bearer <token>
-  ( Stateless authorization )
-  ```
-
-* KEY-POINT: By sending in the Authorization header, Cross-Origin Resource Sharing
-  (CORS) won't be an issue as it doesn't use cookies.
-
-## JWT Best-Patterns:
-* A typical OpenID-Connect compliant web-application will go through the
-  `/oauth/authorize` endpoint using the authorization code flow.
-* When the authorization is granted, the authorization server returns an
-  access token back to the application.
-* Secret information **MUST NOT** be placed into the PAYLOAD unless the JWT is
-  encrypted.
-* Don't store JWT inside localStorage or session storage since it's
-  accessible by any script inside the page: an XSS attack or a compromised
-  page can let an external attacker get access to the token.
-* Stored JWT inside an httpOnly cookie, that’s only sent in
-  HTTP requests to the server and it's never accessible
-  (both for reading or writing) from JS running in the browser.
-* Don't use JWT as Sessions since it's error prone.
-
-[[{02_doc_has.comparative]]
-* Signing XML with XML Digital Signature is very complex and
-  error prone when compared to the simplicity of signing JSON.
-[[}]]
-
-## JSON Web Signature (JWS)
-
-* REF: <https://tools.ietf.org/html/rfc7515>
-* JSON Web Signature (JWS) represents content secured with digital
-  signatures or Message Authentication Codes (MACs) using JSON-based
-  data structures.  Cryptographic algorithms and identifiers for use
-  with this specification are described in the separate JSON Web
-  Algorithms (JWA) specification and an IANA registry defined by that
-  specification.  Related encryption capabilities are described in the
-  separate JSON Web Encryption (JWE) specification.
-
-## JSON Web Encryption (JWE)
+## JSON Web Encryption (JWE RFC 7516) <!-- { -->
 * REF: <https://tools.ietf.org/html/rfc7516>
 * Spec for JSON objects representin encrypted content.
   Related digital signature and Message Authentication Code (MAC)
   capabilities are described in the separate JSON Web Signature(JWS)
   specification.
+* In addition to JWS Header.Payload.Signature format, we have a
+  5 fileds `Header.Key.Vector.Payload.Tag`, defined in "7.1. JWE Compact Serialization"
+  in RFC 7516, JSON Web Encryption (JWE).
+  ```
+  BASE64URL(UTF8(JWE Protected Header)) || '.' ||
+  BASE64URL(JWE Encrypted Key)          || '.' || ¹
+  BASE64URL(JWE Initialization Vector)  || '.' ||
+  BASE64URL(JWE Ciphertext)             || '.' || ²
+  BASE64URL(JWE Authentication Tag)
+  ```
+  Used to encrypt (ID and others) tokens.
+
+  ¹ In general encryption is two step process:
+    STEP 1) Encrypt data using a shared symmetric key.
+    STEP 2) Encrypt symmetric key using a public (asymmetric) key.
+
+  ² JWE RFC 7516 says that any data can be used as the input.
+    However, in the context of ID Token, the data has to be a JWS.
+    That is, a JWS is nested in a JWE.
+
+* Example JWE:
+  ```
+  | eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ.                    <·· {"alg":"RSA-OAEP","enc":"A256GCM"}
+  | OKOawDo13gRp2ojaHV7LFpZcgV7T6DVZKTyKOMTYUmKoTCVJRgckCL9kiMT03JGe   <·· Binary Encrypted Key
+  | ipsEdY3mx_etLbbWSrFr05kLzcSr4qKAq7YN7e9jwQRb23nfa6c9d-StnImGyFDb   
+  | Sv04uVuxIp5Zms1gNxKKK2Da14B8S4rzVRltdYwam_lDp5XnZAYpQdb76FdIKLaV
+  | mqgfwX7XWRxv2322i-vDxRfqNzo_tETKzpVLzfiwQyeyPGLBIO56YJ7eObdv0je8
+  | 1860ppamavo35UgoRdbYaBcoh9QcfylQr66oc6vFWXRcZ_ZT2LawVCWTIy3brGPi
+  | 6UklfCpIMfIjf7iGdXKHzg.
+  | 48V1_ALb6US04U3b.                                                  <·· Binary IV
+  | 5eym8TW_c8SuK0ltJ3rpYIzOeDQz7TALvtu6UG9oMo4vpzs9tX_EFShS8iB7j6ji   <·· Binary Chipertext
+  | SdiwkIr3ajwQzaBtQD_A.                                        
+  | XFBoMYUZodetZdvTiFvSkQ                                             <·· Binary JWE Authentication Tag
+  ```
+<!-- } -->
 
 ## JSON Web Key (JWK)
 * REF: <https://tools.ietf.org/html/rfc7517>
 * Spec for a JSON data structure representing a cryptographic key
   It defines also a JWK-Set JSON for set of JWKs.
-
 
 ## JSON Web Algorithms (JWA)
 * REF: <https://tools.ietf.org/html/rfc7518>
@@ -187,9 +337,11 @@
   ```
 [[}]]
 
-## Selective Disclosure for JWTs (SD-JWT)
-* REF: <https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/>
-
+[[{PM.TODO.0]]
+## Selective Disclosure for JWTs (SD-JWT) 
+* REFS:
+  * <https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/>
+    (Draft 2023-04-11 at the time of writing).
 *  The JSON-based representation of claims in a signed JSON Web Token
   (JWT) [RFC7519] is secured against modification using JSON Web
   Signature (JWS) [RFC7515] digital signatures.  A consumer
@@ -202,6 +354,16 @@
   depending on the Verifier becomes crucial to ensure minimum
   disclosure and prevent Verifiers from obtaining claims irrelevant for
   the transaction at hand.
+
+### SD-JWT VC  
+* REFS:
+  <https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/>
+  (2023-03-12 at the time of writing)
+  The type metadata for SD-JWT VC is currently defined in a separate draft,
+  available at
+  <https://vcstuff.github.io/sd-jwt-vc-types/draft-fett-oauth-sd-jwt-vc-types.html>
+  (to be integrated into SD-JWT)
+[[PM.TODO.0}]]
 
 [[{protocol.OAuth,use_case.Authorization]]
 [[02_doc_has.comparative,cryptography.signature.jwt,02_doc_has.diagram]]
@@ -503,6 +665,14 @@ authentication standard while it is designed as Authorization by design.
 (An authorization signed token is a claim that the user is believed
  to be himself for the act of executing an action or accesing 
  some resource).
+
+NOTE: OpenID Connect can also be seen as a "transport" for Credencitials.
+In such sense, next alternatives can be cited:
+* DIDComm               : <https://identity.foundation/didcomm-messaging/spec/">
+* Credential Handler API: <https://w3c-ccg.github.io/credential-handler-api/>
+* SAML v2               : <https://saml.xml.org/saml-specifications>
+or any other transport envelope. 
+
 
 Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
@@ -1530,9 +1700,7 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
    * 11.3. Nested Verifiable Presentations
    * 11.4. State Management
    * 11.5. Response Mode direct_post
-```
 * See 12. in spec Security Considerations details:
-
 * See Appendix A in spec for Examples with Credentials in Various Formats
   ```
   | A.1. W3C Verifiable Credentials
@@ -1817,6 +1985,10 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
 * See original doc for details on Security Considerations
 [[Protocol.OAuth.JARM}]]
+
+# FAPI Related Tecnologies [[{FAPI,PM.TODO]]
+<https://medium.com/@hidebike712/fapi2-explained-8602e52596e5>
+[[FAPI}]]
 
 # TODO/Non-Classified [[{PM.TODO.now]]
 * OAuth 2.0 Bearer Token Usage [RFC6750]
