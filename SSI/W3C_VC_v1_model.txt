@@ -1,0 +1,270 @@
+# Verifiable Credentials Data Model v1.1
+  (Latest published version & Latest editor's draft)
+* <https://www.w3.org/TR/vc-data-model/>
+* W3C Recommendation 03 March 2022
+  <https://www.w3.org/TR/2022/REC-vc-data-model-20220303/>
+* History:
+  <https://www.w3.org/standards/history/vc-data-model>
+* Implementation report:
+  <https://w3c.github.io/vc-test-suite/implementations/>
+* Editors: Digital Bazaar, ConsenSys, Evernym, MATTR, University of Kent
+
+* **W3C recommends the wide deployment of this specification as a standard for the Web.
+
+
+* Goals: 
+  * Revocation by issuer should not reveal information about the subject,
+    holder, revoked VC, or verifier.
+  * Issuers can disclose the revocation reason.
+  * Issuers revoking VC should distinguish between revocation for 
+    cryptographic integrity (eg: priv.key compromised) versus revocation
+    for a status change (eg: driver's license is suspended).
+
+* at least three proof mechanisms has been implemented by the working group:
+  * JWT [RFC7519] using JSON Web Signatures [RFC7515].
+  * Data Integrity Proofs.
+  * Camenisch-Lysyanskaya Zero-Knowledge Proofs.
+
+## Core Data Model
+
+
+* Claims (statement) and/or claim-set about a subject.
+* Verifiable Presentations: allowing to express only the portions of their persona
+  appropriate for a given situation, containing Presentation Metadata, Verifiable
+  Credential(s), and Proof(s):
+  * Presentation Graph:  Contains metadata plus 1+ VCs.
+  * (VC) Credential Graph: Contains credential metadata and claims.
+    * Credential Proof Graph: VC graph proof, usually a digital signature.
+  * Presentation Proof Graph, 
+
+* Example VC: 
+  ```
+  | {
+  |   "@context": [        <·· VCs&VPs attributes and values can be "long" URIs.
+  |                            @context ordered list allows to map such URIs to 
+  |                            short-form aliases.
+  |                            When using a JSON-LD processor, it can also set 
+  |                            datatype, language, Transform rules, ...
+  |                            * Do NOT use it to constrain data types  [[qa.best_pattern]]
+  |                              of the data model. Leave semantics open-ended.
+  |                              Use VC.type property instead.
+  | 
+  |     "https://www.w3.org/2018/credentials/v1",   <·· Mandatory 1st value.
+  |     "https://example.com/VC/ex/v1?hl=z8guWNz."  <·· Custom context.
+  |                                   └──────────┴─···· Example of hash-link protection
+  |                                                     (not mandatory, since implementations
+  |                                                     are expected to ship with static copies)
+  |   ],
+  |   "credentialSchema": {      <·· OPTIONAL: used to verify the structure&contents of VC
+  |     "id": "https://.../degree.json",  
+  |     "type": "JsonSchemaValidator2018"
+  |   }
+  |   "id": "http://example.edu/VC/1872", <·· MAY: Must be an URI (vs did, cert name, ...) 
+  |                                           for the credentialSubject.id 
+  |                                           TIP: Omit to avoid correlation privacy issues
+  |                                           RECOMMENDED: make URI point to real data.
+  | 
+  |   "type": [                   <·· MUST be interpreted as UNordered set. values are "shortcuts" to URIs
+  |                                   defined in @context 
+  |     "VerifiableCredential",   <·· Required by the spec.
+  |     "AlumniCredential"        <·· Optional. At least one additional value is recommended.
+  |                                   It will allow JSON-LD to enforce the semantics of the VC.
+  |                                   [[qa.best_pattern]]
+  | ],
+  |   "issuer": "https://.../565",<·· MUST. Object (or JWT) with id prop (or URI to it)
+  |                                   ex: { "id": "did:.,..", "name": "..." },
+  |   "issuanceDate": "2010-01-01T19:23:24Z", <·· MUST. To be deprecated with 
+  |                                   ["issued", "validFrom"] in W3C VC v2
+  |   "expirationDate": "..."     <·· Optional. To be deprecated in favor of "validUntil"
+  |   "credentialSubject": {      <·· MUST: Contains claims about 1+ subjects.
+  |     "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+  |     "alumniOf": {
+  |       "id": "did:example:c276e12ec21ebfeb1f712ebc6f1",
+  |       "name": [{ "value": "Example University", "lang": "en" },
+  |                { "value": "Exemple d'Université", "lang": "fr" }]
+  |     },
+  | "degree": {
+  |   "type": "BachelorDegree",
+  |   "name": "Bachelor of Science and Arts"
+  | }
+  |   },
+  |   "proof": {                               <·· MUST: Proof of VC ¹
+  |     "type": "RsaSignature2018",            <·· Required. A valid proof type
+  |     "created": "2017-06-18T21:19:10Z",
+  |     "proofPurpose": "assertionMethod",     ²
+  |     "verificationMethod": "https://example.edu/issuers/565049#key-1",
+  |     "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI...
+  |       sITJX1CxPCT8yAV-TVkIEq_PbChOMqsLf...
+  |       X16dUEMGlv50aqzpqh4Qktb3rk-BuQy72...
+  |       PAYuNzVBAh4vGHSrQyHUdBBPM"
+  |   },
+  |  "credentialStatus": {                     <·· Optional.
+  |    "id": "https://example.edu/status/24",      <·· MUST
+  |    "type": "CredentialStatusList2017"          <·· Required, a valid valid credential status type
+  |  },
+  |  "termsOfUse": [ {...} ]                   <·· Optional
+  |  "evidence"  : [ {...} ]                   <·· Optional
+  | }
+  | 
+  | ¹ Dereferencing a public key URL reveals information about the controller of the key,
+  |   Relevant public key "metadata" is expected to be available to verifiers such as:
+  |   Pub.key value, expiration date,  owner,  purpose and  state (active, suspended, revoked, expired).
+  | ² proofPurpose is expected to match that in the metadata.
+  |   The standard contemplates other proof than cryptographic signatures such as proof-of-work/state,  
+  |   ... but they are not very realistic in practice. 
+  ```
+
+* Example 2: A simple example of a verifiable presentation
+
+  ```
+  | {
+  |   "id":                                <·· MAY:
+  |   "@context": [
+  |     "https://www.w3.org/2018/credentials/v1", <·· Mandatory 1st value.
+  |     "https://.../examples/v1"
+  |   ],
+  |   "type": "VerifiablePresentation",    <·· MUST:
+  |   "verifiableCredential": VC_list ,    <·· MAY: array of 1+ VCs.
+  |                                            Alternatively, derived VCs in ZKP scenarios.
+  |   "holder": ...                        <·· MAY: URI to entity generating the VP
+  | 
+  |   "proof": {        <·· Cryptographic Proof of VP. One of:
+  |                         alt 1. external proof (JWT)
+  |                         alt 2. embedded proof (Linked Data Signature)
+  |     "type": "RsaSignature2018",        <·· ¹
+  |     "created": "2018-09-14T21:19:10Z",
+  |     "proofPurpose": "authentication",        
+  |     "verificationMethod": "did:...#keys-1", <·· Or https://.../iss/13#key-1
+  |     "challenge": "1f44d55f-f161-...",  <·· nonce, ...
+  |     "domain": "4jt78h47fh47",                   
+  |     "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI...
+  |       XsITJX1CxPCT8yAV-TVIw5WEuts01mq-p...
+  |       LfRoPsnsgxD-WUcX16dUOqV0G_zS245-k..."
+  |   }
+  | }
+    ¹ Registered types: <https://w3c-ccg.github.io/vc-extension-registry/#proof-methods>
+                  Ed25519Signature(2020|2018)
+       EcdsaSecp256(k|r)1Signature2019 
+                      RsaSignature2018
+                  JsonWebSignature2020 
+  ```
+
+## Lifecycle Details
+
+1. issuer issues VC to holder. 
+2. (optional) holder transfer 1+ VCs to another holder.
+3. holder presents 1+ VCs to verifier (probably inside VP).
+4. verifier verifies authenticity of the VP + VCs.
+
+
+5.3 Extensibility
+Example 15: A simple credential
+CredentialVerifiable Credential (with proof)Verifiable Credential (as JWT)
+
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/2018/credentials/examples/v1"
+  ],
+  "id": "http://example.com/credentials/4643",
+  "type": ["VerifiableCredential"],
+  "issuer": "https://example.com/issuers/14",
+  "issuanceDate": "2018-02-24T05:28:04Z",
+  "credentialSubject": {
+    "id": "did:example:abcdef1234567",
+    "name": "Jane Doe"
+  }
+
+
+5.3.1 Semantic Interoperability
+This specification ensures that "plain" JSON and JSON-LD syntaxes are semantically compatible without requiring JSON implementations to use a JSON-LD processor. To achieve this, the specification imposes the following additional requirements on both syntaxes:
+
+5.4 Data Schemas types:
+* Data verification schemas: used to verify the structure and contents of VC ar conformant
+  to a published schema.
+* Data encoding schemas: used to map the contents of a VC to an alternative representation
+  (JSON, binary format, ...)
+
+This specification defines the following property for the expression of a data schema, which can be included by an issuer in the verifiable credentials that it issues:
+
+credentialSchema
+    The value of the credentialSchema property MUST be one or more data schemas that provide verifiers with enough information to determine if the provided data conforms to the provided schema. Each credentialSchema MUST specify its type (for example, JsonSchemaValidator2018), and an id property that MUST be a URI identifying the schema file. The precise contents of each data schema is determined by the specific type definition. 
+
+Note
+
+5.5 Refreshing
+
+5.6 Terms of Use
+termsOfUse
+    The value of the termsOfUse property MUST specify one or more terms of use policies under which the creator issued the credential or presentation. If the recipient (a holder or verifier) is not willing to adhere to the specified terms of use, then they do so on their own responsibility and might incur legal liability if they violate the stated terms of use. Each termsOfUse value MUST specify its type, for example, IssuerPolicy, and MAY specify its instance id. The precise contents of each term of use is determined by the specific termsOfUse type definition. 
+
+Example 21: Usage of the termsOfUse property by an issuer
+CredentialVerifiable Credential (with proof)Verifiable Credential (as JWT)
+
+
+6. Syntaxes
+
+## data model to JSON-LD and plain JSON (potentially XML, YAML, CBOR, ...)
+
+* JWT REPRESENTATION summary 
+  ```
+  JWT     == Singed JSON (JSON-LD).
+  └┬┘
+   * For backward compatibility with exiting JWT processors the following 
+     registered JWT claim names MUST be used
+     · `iss` (iss)uer of VC or holder of VP.
+             to be encoded/decoded as VC.issuer.
+     · `exp` expiration            date, encoded as UNIX timestamp (NumericDate)
+             to be encoded/decoded as [XMLSCHEMA11-2] date-time as `credentialSubject.expirationDate`.
+     · `nbf` (not before/issuance) date, encoded as UNIX timestamp (NumericDate)
+             to be encoded/decoded as [XMLSCHEMA11-2] date-time as `VC.issuanceDate`.
+     · `jti` id property of VC / VP.
+             to be encoded/decoded as VC.id
+     · `sub` matching credentialSubject.id.
+             to be encoded/decoded as credentialSubject.id
+             Not needed in Bearer VCs (VCs proobing the right of the sub to access a resource)
+     · `aud` Audience. Intended audience (recipient verifier) of VC. 
+             Lets verifier check that it is not the target of a man-in-the-middle attack.
+     * Example: JWT baseURLdecoded (and signature removed)
+       {                                                   <·· Preoof based on JWS digital signatures
+         "alg": "RS256",
+         "typ": "JWT",
+         "kid": "did:...#keys-1"
+       }
+       {
+         "sub": "did:example:ebfeb1f712ebc6f1c276e12ec21", <·· replaces credentialSubject.id
+         "jti": "http://example.edu/credentials/3732",     <·· replaces vc.id
+         "aud": "did:example:4a57546973436f6f6c4a4a57573",
+         "iss": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+         "nbf": 1541493724,
+         "iat": 1541493724,
+         "exp": 1573029723,
+         "vc": {
+       
+           "@context": [
+             "https://www.w3.org/2018/credentials/v1",
+             "https://www.w3.org/2018/credentials/examples/v1"
+           ],
+           "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+           "credentialSubject": {
+             "degree": {
+               "type": "BachelorDegree",
+               "name": "Bachelor of Science and Arts"
+             }
+           }
+         }
+       }
+
+   * no JWT-specific encoding rules for Advanced Concepts (refreshService, termsOfUse, evidence)
+     have been established. They can be encoded without any transformation and added to the VC
+     JWT claim.
+  ```
+
+* JSON-LD REPRESENTATION summary: <br/>
+  * This specification utilizes Linked Data using Web standards (URLs, JSON-LD)
+  to identify entities and properties. 
+  * no extra pre/post-processing is necessary (as is the case with JWT).
+  ```
+  JSON-LD == JSON + @context 
+  ```
+  (Extra details can be found in the Verifiable Credentials Implementation Guidelines)
