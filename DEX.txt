@@ -1,7 +1,7 @@
 # Dex [[{01_PM.low_code,stack.dex,protocol.OAuth,protocol.OIDC]]
 
 * <https://github.com/dexidp/dex> (7.8K starts in Github as of 2023-01)
-* Light KeyCloak/Oak/... alternitive.
+* Light KeyCloak/Oak/... alternitive
 
 * OpenID Connect (OIDC) identity and OAuth 2.0 provider with pluggable connectors 
 * Dex is a Federated OpenID-Connect identity and OAuth 2.0 provider, 
@@ -133,7 +133,7 @@ then dex handles the protocols for a given backend** through
   Alpha: may be untested by core maintainers and likely to change.
  ```
 
-# Writing apps That Use Dex
+## Writing apps That Use Dex
 * REF: <https://dexidp.io/docs/using-dex/>
 [[}]]
 

@@ -1,0 +1,4 @@
+# TODO
+
+* https://openid.net/sg/openid4vc/specifications/
+* https://openid.github.io/OpenID4VCI/openid-4-verifiable-credential-issuance-wg-draft.html

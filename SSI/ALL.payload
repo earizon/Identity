@@ -1,0 +1,52 @@
+Decentrilized_Identity_foundation.txt // 71 lines
+presentation_definition.txt              // OK
+W3C_VC_v1_model.txt                      // OK
+// TODO:(0) ────────────────────────────────────────────────────────────────────
+WiP_W3C_VC_v2_model.txt                  // 0 lines 
+W3C_VC_Implementation_Guidelines_1.0.txt // TODO:(0)
+// Concise Binary Object Representation (CBOR). C. https://www.rfc-editor.org/rfc/rfc7049 
+../JWT_JWS_JOSE.txt
+sd_jwt.txt                               //   2 lines
+OAuth_status_attestation.txt // 1 lines
+WiP_SIOPv2.txt                           // 427 lines
+WiP_OIDC4VC.txt                          //   4 
+TODO_DIDComm.txt                         // 11 lines
+TODO_EUIDW_PID_ruleBook.txt              // 609 lines
+// FUTURE: ─────────────────────────────────────────────────────────────────────
+future_DIDRoom_eDIAS2_wallet.txt         // X-platform, multi-functional Identity/SSI wallet EUIDW
+future_W3C_VC_API.txt                    // 
+// OTROS: ─────────────────────────────────────────────────────────────────────
+// did_ethereum_implementations.txt
+// 79 WaltID_SDK.txt
+// TODO:(0.5)
+// TODO:(0.7)
+WiP_DID_Registration.txt //  1219 
+// indy.txt
+// solid_protocol.txt
+
+// Review:
+// JSON-LD 1.1: JSON-based Serialization for Linked Data. https://www.w3.org/TR/json-ld11/ 
+// W3C XML Schema Definition Language (XSD) 1.1 Part 2: Datatypes. https://www.w3.org/TR/xmlschema11-2/ 
+// A Signature Scheme with Efficient Protocols. https://www.researchgate.net/publication/220922101_A_Signature_Scheme_with_Efficient_Protocols , Peer Reviewed Paper. 
+// Data Integrity. https://w3c-ccg.github.io/data-integrity-spec/ 
+// Simple Demographics Often Identify People Uniquely. https://dataprivacylab.org/projects/identifiability/paper1.pdf 
+// Cryptographic Hyperlinks. https://datatracker.ietf.org/doc/draft-sporny-hashlink/ 
+// JSON Schema: A Media Type for Describing JSON Documents. https://datatracker.ietf.org/doc/draft-handrews-json-schema/ 
+// Linked Data Cryptographic Suite Registry. https://w3c-ccg.github.io/ld-cryptosuite-registry/ 
+// Linked Data Design Issues. Tim Berners-Lee. W3C. 27 July 2006. https://www.w3.org/DesignIssues/LinkedData.html 
+// [RFC7516]
+//     JSON Web Encryption (JWE). M. Jones; J. Hildebrand. IETF. May 2015. Proposed Standard. URL: https://www.rfc-editor.org/rfc/rfc7516 
+// [RFC7797]
+//     JSON Web Signature (JWS) Unencoded Payload Option. M. Jones. IETF. February 2016. Proposed Standard. URL: https://www.rfc-editor.org/rfc/rfc7797 
+// [RFC8471]
+//     The Token Binding Protocol Version 1.0. A. Popov, Ed.; M. Nystroem; D. Balfanz; J. Hodges. IETF. October 2018. Proposed Standard. URL: https://www.rfc-editor.org/rfc/rfc8471 
+// [STRING-META]
+//     Strings on the Web: Language and Direction Metadata. Addison Phillips; Richard Ishida. Internationalization Working Group. W3C Working Draft. URL: https://www.w3.org/TR/string-meta/ 
+// [VC-EXTENSION-REGISTRY]
+//     Verifiable Credentials Extension Registry. Manu Sporny. Credentials Community Group. CG-DRAFT. URL: https://w3c-ccg.github.io/vc-extension-registry/ 
+// [VC-IMP-GUIDE]
+//     Verifiable Credentials Implementation Guidelines 1.0. Andrei Sambra; Manu Sporny. Credentials Community Group. W3C Editor's Draft. URL: https://w3c.github.io/vc-imp-guide/ 
+// [VC-USE-CASES]
+//     Verifiable Credentials Use Cases. Shane McCarron; Joe Andrieu; Matt Stone; Tzviya Siegman; Gregg Kellogg; Ted Thibodeau. W3C. 24 September 2019. W3C Working Group Note. URL: https://www.w3.org/TR/vc-use-cases/ 
+// [WCAG21]
+//     Web Content Accessibility Guidelines (WCAG) 2.1. Andrew Kirkpatrick; Joshue O'Connor; Alastair Campbell; Michael Cooper. W3C. 5 June 2018. W3C Recommendation. URL: https://www.w3.org/TR/WCAG21/ 

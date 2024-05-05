@@ -1,0 +1,251 @@
+# TODO <!-- { -->
+* DIF Presentation Request:
+  <https://identity.foundation/presentation-exchange/spec/v2.0.0/#presentation-request>
+# MFA OOSS  [[{security.aaa.mfa]]
+* <https://opensource.com/article/20/3/open-source-multi-factor-authentication> 
+Open source alternative for multi-factor authentication: privacyIDEA
+[[}]]
+
+* Credential Provider either provides a credential directly (Server Retrieval) or
+  indirectly (Device Retrieval) to the Relying Party that requested the VC or id_token.
+
+* UICC: Universal CPU+ROM+RAM+EEPROM+I/O] circuit Card [[{hardware.smart_card.UICC}]] <br/>
+  Actually "UICC is neither an abbreviation nor an acronym".
+  The UICC term can be used interchangeably with "SIM", "USIM", "RUIM" or "CSIM".
+  * smart card (integrated circuit card) following ETSI TR 102 216 and used
+  in 2G(GSM),3G(UMTS),4G(LTE),5G mobiles ensuring security of personal data.
+  * A UICC may contain several applications: 
+    * In 2G/3G/... the UICC ussually contains a phone book and other applications.
+    * In 2G/GSM  the  UICC contains a SIM application to connect to 2G.
+    * In 3G/UMTS the  UICC contains a USIM application to connect to 3G.
+    * With UMTS release, the IP multimedia Services Identity Module (ISIM) is required
+      for services in the IMS. 
+  * ... 
+  * PIN1 code can be defined to control normal use of the phone.
+  * PIN2 code can be set to allow the use of special functions (limiting outbound
+    telephone calls to a list of numbers).
+  * PUK1 and PUK2 is used to reset PIN1 and PIN2.
+  * <https://en.wikipedia.org/wiki/Universal_integrated_circuit_card>
+
+* eUICC: embedded (and optionally removable) UICC 
+  * <https://www.gsma.com/get-involved/working-groups/sim-working-group/embedded-sim>.
+
+## Okta "Identity as a Service" [[{]]
+  @[https://www.okta.com/]
+* 
+  Identity for the Internet
+  Okta is one trusted platform to secure every identity. More than
+  10,650 organizations trust Okta’s software and APIs to sign in,
+  authorize and manage users
+[[}]]
+
+##  Auth0.com [[{]]
+* <https://www.youtube.com/channel/UCUlQ5VoIzE_kFbYjzUwHTKA>
+* authentication and authorization for web, mobile, and legacy applications as a service.
+* 30+ SDKs and Quickstarts in just five minutes.
+[[}]]
+
+## Midpoint: [[{]]
+* <https://evolveum.com/midpoint/>
+* Why is midPoint the Best Identity Management and Identity Governance platform?
+[[}]]
+
+## iDenfy[[{use_case.identity-verification]]
+  -iDenfy is an identity verification startup committed to helping
+  businesses meet compliance regulations. We provide you with a wide
+  range of solutions for ID scanning, ID verification, facial
+  recognition, liveness detection, PEP and Sanctions screening and
+  more. For any help regarding AML compliance, you can seek our
+  assistance for free of charge.
+[[}]]
+
+
+# https://blockstack.org   [[{]]
+  (supported by Tim Berners Lee)
+@[https://retina.elpais.com/retina/2017/10/17/innovacion/1508241687_063772.html?id_externo_rsoc=LK_CC]
+    Blockstack es uno de los proyectos más ambiciosos en esta línea.
+  Esta compañía propone reinventar la red para asegurar la privacidad
+  de los internautas. Sus impulsores han utilizado un software de
+  código abierto para crear un ecosistema paralelo a internet que
+  permite a los usuarios gestionar su identidad digital. Están
+  trabajando en un navegador con el que estos pueden elegir la
+  información que comparten.
+  https://www.technologyreview.com/s/603352/one-startups-vision-to-reinvent-the-web-for-better-privacy/
+  y pueden revocar el acceso de una empresa a sus datos en cualquier momento.
+  El propio creador de la World Wide Web —www o lo que hoy llamamos
+  internet—, Tim Berners-Lee, es usuario de la plataforma, que cuenta
+  con la colaboración de Microsoft y ha registrado cerca de 75.000
+  dominios.
+[[}]]
+
+## OnChainID: Token "ID"@regulated exchanges [[{use_case_finance.*,use_case.identity,01_PM.TODO]]
+  - https://docs.onchainid.com/introduction/
+  - https://tokeny.com/wp-content/uploads/2018/12/t-rex-whitepaper.pdf
+  - https://onchainid.com/
+[[}]]
+
+## https://www.didomi.io/
+  Place customer consent at the core of your strategy
+
+  Didomi builds technology to help companies put their users in control
+  of their personal data. By doing so, they generate valuable trust and
+  lay the groundwork for privacy-conscious growth.
+
+## RFC 9449: Demonstrating Proof-of-Possession (DPoP)
+* https://oauth.net/2/dpop/
+* https://darutk.medium.com/illustrated-dpop-oauth-access-token-security-enhancement-801680d761ff 
+* datatracker.ietf.org/doc/html/rfc9449
+RFC 9449: OAuth 2.0 Demonstrating Proof-of-Possession at the Application Layer (DPoP) 
+ DPoP, or Demonstrating Proof of Possession, is an extension that 
+describes a technique to cryptographically bind access tokens to a 
+particular client when they are issued. This is one of many attempts 
+at improving the security of Bearer Tokens by requiring the 
+application using the token to prove possession of the same private 
+key that was used to obtain the token.
+
+## RFC 7636 : Proof Key for Code Exchange (
+https://www.authlete.com/developers/pkce/
+RFC 7636 : Proof Key for Code Exchange (PKCE, pronounced “pixy”) is a specification about a countermeasure against the authorization code interception attack. The specification was released on September, 2015. It has added:code_challenge parameter and code_challenge_method parameter to authorization requests using the authorization code flow, andcode_verifier parameter to token requests that correspond to the authorization requests.This mechanism enables an authorization server to reject a token request from a malicious application that does not have a code verifier.
+
+## supabase react native Oauth login in Android anf iOS
+https://supabase.com/blog/native-mobile-auth 
+Supabase supports OAuth logins with 17 providers including Apple, 
+Google, Microsoft, GitHub, ... But for native mobile apps, this meant 
+that developers had to use a web browser to sign in. It’s not an 
+ideal flow for users, who are already used to signing in with the 
+operating system’s native dialogs when possible. Today, we are 
+excited to announce full native support for Sign in with Apple and 
+Google on iOS and Android. But this is not all! Supabase Auth now can 
+now be used with one-tap sign in methods like: Sign in with Apple JS, 
+Sign in with Google for Web or even in Chrome extensions.Native Sign 
+in with Apple and GoogleDevelopers of native iOS and Android apps 
+(using Flutter or React Native) can now take advantage of OS-provided 
+authentication dialogs for Apple and Google. This is available on 
+iOS, macOS, tvOS and watchOS apps in the Apple ecosystem, and all 
+Android variants in the Google ecosystem
+
+## FreeIPA [[{]]
+@[https://www.redditecom/r/linuxadmin/comments/apbjtc/freeipa_groups_and_linux_usernames/]
+
+* Main features
+* Integrated security information management solution combining Linux 
+  (Fedora), 389 Directory Server, MIT Kerberos, NTP, DNS, Dogtag 
+  certificate system, SSSD and others.
+* Built on top of well known Open Source components and standard protocols
+* Strong focus on ease of management and automation of installation 
+  and configuration tasks.
+* Full multi master replication for higher redundancy and scalability
+* Extensible management interfaces (CLI, Web UI, XMLRPC and JSONRPC 
+  API) and Python SDK:
+
+[[}]]
+
+## (Community-driven) User Controlled Authorization Network (UCAN) STANDARD.  [[{]]
+* <https://ucan.xyz/>
+* extension of JSON Web Token (JWT) specifically designed to enable ways of
+  authorizing offline-first apps and distributed systems.
+* UCANs are all you need to sign into multiple machines, delegate access for 
+  service providers to do things while you are offline, securely collaborate
+  on documents with a team, and more. 
+* fine or coarse-grained control, all controlled by the one who cares about
+  the data the most: the user.
+* No central "all-powerful" authorization server. Everything that a user is
+  allowed to do is captured directly in a key or self-contained token, and
+  can be sent to anyone that knows how to interpret this format.
+* KEY-POINT: all accounts are equipped with a global ID and cryptographic keys,
+  we were able to design a system that has very few assumptions and thus works
+  in a huge number of situations.
+* Setup has several advantages:
+  * Low effort: developers don’t need to write and maintain complex access logic.
+*  E.g use in nft.storage:
+  <https://github.com/nftstorage/nft.storage/issues/851>
+[[}]]
+
+## Himeji: scalable centralized authorization system
+https://www.infoq.com/news/2021/05/airbnb-himeji/
+* Airbnb recently described how it built Himeji.
+*  Himeji stores permissions data and performs
+  permission checks as a central source of truth. It uses a sharded and
+  replicated in-memory cache to improve performance and lower latencies
+  and has served checks in production for about a year. Its throughput
+  has scaled up from 0 in March 2020 to 850k entities/sec in March 2021
+  while maintaining 99.999% availability and 12-millisecond latency at
+  the 99 percentile.
+
+## GoTrue OAuth [[{use_case.AAA,protocol.oauth,standards.jwt,01_PM.low_code,01_PM.TODO]]
+@[https://github.com/netlify/gotrue]
+
+- lightweight open-source and self-standing API for handling
+  user registration (signup) and authentication and custom user data.
+- based on OAuth2 and JWT.
+
+- Configuration through ".env" config file or
+  environment variables (GOTRUE_*)
+
+  Config. include options to set (request) rate limits,
+  multi-instance (multi-tenant?), DB backend (mysql only as 2021-06),
+  logging, tracing, JWT and other cryptographic secrets,
+  WEBHOOK_URL (called upon validate/signup/login events),
+  WEBHOOK_RETRIES,...
+
+  JWT tokens can also be managed by:
+  - Audience (group of users)
+  - admin groups
+
+- External Authentication supported for:
+  ✓ bitbucket ✓ gitlab
+  ✓ github    ✓ google
+
+  Example github external config:
+  GOTRUE_EXTERNAL_GITHUB_CLIENT_ID=my_app_client_id
+  GOTRUE_EXTERNAL_GITHUB_SECRET=client_secret_values_sssh
+
+- Support for password recovery through email.
+  SMTP config summary:
+  GOTRUE_SMTP_HOST=smtp.mandrillapp.com
+  GOTRUE_SMTP_USER=smtp-delivery@example.com
+  GOTRUE_SMTP_PASS=...
+  GOTRUE_SMTP_MAX_FREQUENCY=...  min secs to wait before re-sending
+                                 signup confirm/pass reset
+  (+ e-mail template file)
+
+- Exposed REST-API endpoints:
+  GET /settings:
+  POST /signup  (email + password)
+  POST /invite  (email)
+  POST /verify  (type:=singup|recovery, token, ...)
+                returns access_token + refresh_token
+  POST /recover (email)
+  POST /token   (OAuth2 endpoint implementing pass/refresh_token/
+                 and authorization_code grant types)
+  PUT /user     (Update a user).
+  POST /logout  (revoke all refresh tokens for user).
+         WARN : JWT tokens will still be valid for stateless auth
+                until expiration (1hour by default)
+
+- Alternatives to Gotrue (in some contexts) can be:
+  1. Keycloak, very complete but "heavy" (Java based) Identity solution.
+     Actually gotrue can be seen service provider (SP) connected to Keycloak:
+     → keycloak admin console
+       → create client:
+         ID "https://example.com/.netlify/identity/saml" ← gotrue API endpoint
+   (@[https://yyhh.org/blog/2020/04/how-to-enable-saml-sso-with-self-hosted-gotrue-and-git-gateway/])
+  · Kratos: https://www.ory.sh/kratos/
+[[}]]
+
+## OAuth2 to SAML2 Proxy with EnvoyFilter [[{PROTOCOL.OAUTH,PROTOCOL.SAML]]
+
+* <https://github.com/oauth2-proxy/oauth2-proxy>
+* <https://github.com/istio/istio/issues/36172>
+
+We are using EnvoyFilter to enable SAML2 authentication with 
+Oauth2Proxy and Dex, looking to redirect the calls coming through the 
+istio-ingressgatey to be check by Oauth2Proxy if the SAML2 
+authentication was establish,
+
+ if not redirect to Dex to start the SAML2 authentication process
+with our IdP and the request just going straight to the service,
+in this case Kiali.
+[[PROTOCOL.OAUTH,PROTOCOL.SAML}]]
+
+<!-- } -->

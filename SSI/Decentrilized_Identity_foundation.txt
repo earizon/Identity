@@ -1,0 +1,71 @@
+# DIF Identity Foundation   
+<https://identity.foundation/>
+""Join us in developing the foundational components of an open,
+  standards*based, decentralized identity ecosystem for people,
+  organizations, apps, and devices."""
+
+* Members: Accenture, Consensy, blockstack, Microsoft, ...
+  RSA, ... Validated Id, .. Blockpass, .. ONTology, ...
+  Auth0, ... , EEA ... Gataca ... Cambridge Blockchain,
+  NEC ... Sovring ...
+
+## DIF Focus:
+* Technical Specifications
+  Groups in DIF develop specifications and emerging standards for
+  protocols, components, and data formats that implementers can execute
+  against.
+
+* Reference Implementations
+  Beyond specifications, DIF members develop open source reference
+  implementations of the technical components and protocols they create.
+
+* Industry Coordination
+  As the leading industry organization in the Decentralized
+  Identity space, DIF seeks to align industry participants to advance
+  their common interests
+
+
+## Working Groups
+* Identifiers and Discovery
+    A key piece of the decentralized identity equation is how people,
+  organizations, and devices can be identified and located without
+  centralized systems of identifiers (e.g. email addresses). DIF
+  members are actively working on protocols and implementations that
+  enable creation, resolution, and discovery of decentralized
+  identifiers and names across decentralized systems, like blockchains
+  and distributed ledgers.
+
+* Authentication
+  Designing and implementing DID*based authentication specs,
+  standards, and libraries used in authenticating DIDs across a wide
+  variety of exchanges and use cases.
+
+
+* Claims and Credentials
+  The ability to verify the claims and assertions of identities is key
+  in establishing trust among entities on a decentralized system that
+  lacks a centralized hierarchy. DIF has recently begun work on
+  defining the specs, protocols, and tools it can provide to the
+  ecosystem to help ecosystem participants and their customers easily
+  integrate DID*signed claims into their apps and services.
+
+* DID Communication
+  Produce one or more high*quality specs that embody a method
+  (“DIDComm”) for secure, private and (where applicable)
+  authenticated message*based communication, where trust is rooted in
+  DIDs and depends on the messages themselves, not on the external
+  properties of the transport(s) used.
+
+* Sidetree Development and Operating Group
+  The development and maintenance of the formal Sidetree specification,
+  and a hub of coordination for Sidetree*based DID Method node
+  operators. This group also generates libraries, tooling, and
+  documentation to aid Sidetree*based DID Method node operators.
+
+* Secure Data Storage
+  Create one or more specifications to establish a foundational layer
+  for secure data storage (including personal data), specifically data
+  models for storage and transport, syntax, data at rest protection,
+  CRUD API, access control, synchronization, and at least a minimum
+  viable HTTP*based interface compatible with W3C DIDs/VCs.
+

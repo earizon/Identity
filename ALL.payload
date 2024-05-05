@@ -1,0 +1,55 @@
+// General
+notes.txt
+FIDO_passwordless.txt
+// OAuth / OpenID {{{
+JWT_JWS_JOSE.txt
+OAuth_OpenIDConnect.txt
+// WiP:
+WiP_RFC_9101_JWT_Secured_AuthorizationRequest.txt // TODO:(0)
+// TODO:
+lds-jws2020.txt
+OIDC_connect_registration.txt
+OAuth_pushed_authorization_request.txt
+OAuth_Secured_Authorization_Responde_Mode.txt
+OAuth_form_Post_Response_Mode.txt
+//   [RFC6749] Hardt, D., Ed., "The OAuth 2.0 Authorization Framework", RFC 6749, DOI 10.17487/RFC6749, October 2012, <https://www.rfc-editor.org/info/rfc6749>. 
+//   [RFC7638] Jones, M. and N. Sakimura, "JSON Web Key (JWK) Thumbprint", RFC 7638, DOI 10.17487/RFC7638, September 2015, <https://www.rfc-editor.org/info/rfc7638>. 
+//   "OAuth 2.0 Security Best Current Practice" <https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-24>. 
+//   "OAuth 2.0 Multiple Response Type Encoding Practices", <https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html>. 
+//   "OpenID Connect Client-Initiated Backchannel Authentication Flow - Core 1.0", <https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html>. 
+//   "OpenID Connect Core 1.0 incorporating errata set 1", <http://openid.net/specs/openid-connect-core-1_0.html>. 
+//   "OpenID Connect Core 1.0 incorporating errata set 1", 8 November 2014, <https://openid.net/specs/openid-connect-discovery-1_0.html>. 
+//   "OpenID Federation 1.0", <https://openid.net/specs/openid-connect-federation-1_0.html>. 
+//   "OpenID Connect Dynamic Client Registration 1.0 incorporating errata set 1", 8 November 2014, <https://openid.net/specs/openid-connect-registration-1_0.html>. 
+//   "OAuth 2.0 for Native Apps", BCP 212, RFC 8252, DOI 10.17487/RFC8252, October 2017, <https://www.rfc-editor.org/info/rfc8252>. 
+//   "Improving OAuth App-to-App Security", 27 November 2020, <https://danielfett.de/2020/11/27/improving-app2app/>. 
+// Radar:
+DEX.txt
+// }}}
+//
+// SSI {{{
+SSI/Decentrilized_Identity_foundation.txt // 71 lines
+SSI/presentation_definition.txt              // OK
+SSI/W3C_VC_v1_model.txt                      // OK
+SSI/WiP_W3C_VC_v2_model.txt                  // 0 lines 
+SSI/W3C_VC_Implementation_Guidelines_1.0.txt // TODO:(0)
+./JWT_JWS_JOSE.txt
+SSI/sd_jwt.txt                               //   2 lines
+SSI/OAuth_status_attestation.txt // 1 lines
+SSI/WiP_SIOPv2.txt                           // 427 lines
+SSI/WiP_OIDC4VC.txt                          //   4 
+SSI/TODO_DIDComm.txt                         // 11 lines
+SSI/TODO_EUIDW_PID_ruleBook.txt              // 609 lines
+// FUTURE: ─────────────────────────────────────────────────────────────────────
+SSI/future_DIDRoom_eDIAS2_wallet.txt         // X-platform, multi-functional Identity/SSI wallet EUIDW
+SSI/future_W3C_VC_API.txt                    // 
+// }}}
+//
+// SAML v2:
+SAML2_summary.txt // WiP
+//
+// Otros:
+W3C_ActivityPub_Protocol.md
+WebAuthenticationAPI.txt
+android_identity_credential_store.txt
+TODO.txt

@@ -1,0 +1,15 @@
+## W3C VC API
+
+* <https://github.com/w3c-ccg/vc-api>
+* WARN: It is NOT a W3C Standard nor is it on the W3C Standards Track. <br/>
+  The specification is highly experimental and changing rapidly.
+  Implementation in non-experimental systems is discouraged unless you
+  are participating in the weekly meetings that coordinate activity 
+  around this specification. 
+* VC API Goals:  Define a set of RESTful API definitions conforming
+  with the OpenAPI 3.0 Specification (formerly known as Swagger) for
+  the roles of Issuer, Verifier, and Holder as described in the
+  Verifiable Credential Data Model specification. 
+* Test procedures and specifications are provided as part of this API
+  definition to allow for repeatable and automated interoperability
+  testing between solutions that interact with Verifiable Credentials.

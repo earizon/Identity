@@ -1,0 +1,3 @@
+# OpenID Connect Registration
+
+* <https://openid.net/specs/openid-connect-registration-1_0.html>

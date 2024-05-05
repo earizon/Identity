@@ -1,0 +1,11 @@
+# DIDComm
+* <https://identity.foundation/didcomm-messaging/spec/>
+
+When compared: 
+* OIDC4SSI / SIOP (Self-Issued OpenID Connect Provider): An extension 
+  of a mature authentication and authorisation protocol called "OpenID 
+  Connect" (OIDC).
+* DIDComm: A novel protocol specifically designed for SSI and 
+  maintained by the Decentralized Identity Foundation (DIF).
+* Credential Handler API: A proposed browser-extension that may be 
+  used to connect the user's identity wallet to a web-application.

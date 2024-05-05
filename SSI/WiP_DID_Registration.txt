@@ -1,0 +1,1219 @@
+# DID Registration Summary [[{vc.did.registration,PM.draft]]
+
+* <https://identity.foundation/did-registration/>
+Specification Status: Pre-Draft [[PM.RISK]]
+
+Each DID method specifies, given verifiable data registry, how to:
+```
+- CREATE     DIDs (pointing to a DID document?) using a "DID Registar"
+- RESOLVE    DIDs to a DID document: well-understood and specified in the DID Resolution specification. (DID Resolver)
+                                     by executing the read() operation.
+- UPDATE     DIDs (document): using a "DID Registar"
+- DEACTIVATE DIDs (document): using a "DID Registar"
+```
+
+Context/Presetup:
+- Verifiable-data-registry component is in place.
+- A "DID Registrar" component interacting  with a verifiable-data-registry is in place.
+
+-  Implementation details can be very different depending on the DID
+method and may involve various steps, architectural components, and
+network communication.
+
+This specification also does NOT suggest that private keys should be controlled by any
+other entity than the DID controller. [[security.secret_mng]]
+
+Architecture Modes
+With regard to key management, a DID Registrar can operate in the following modes:
+
+Internal Secret Mode: (highly trusted) DID Registrar responsible for generating
+                      the DID controller keys "the wallet" used by DID operations.
+
+- This mode has two options that control how DID-controller keys are handled:
+  storeSecrets: if set to true, then the DID Registrar maintains an internal wallet
+           fore create(), update(), deactivate() operations.
+
+TODO: Mention potential import/export of keys, and how this could
+relate to other specs such as Universal Wallet or WebKMS or the
+WebCrypto API.
+
+§
+returnSecrets Option
+If the returnSecrets option is set to true, then the DID Registrar
+will return generated DID controller keys to the client.
+
+§
+Considerations
+The storeSecrets and returnSecrets options can be enabled or disabled
+independently. A DID Registrar may define default values for these
+options, and/or it may allow a client to set them via the options
+input field.
+
+Note that if neither option is enabled, then control over a DID may
+get permanently lost, since the DID Registrar operating in Internal
+Secret Mode will generate DID controller keys internally, but it will
+neither store them nor return them to a client.
+
+If a DID Registrar is configured with options storeSecrets=false and
+returnSecrets=true, then a DID Registrar with option
+storeSecrets=true can be simulated by building a “wrapping DID
+Registrar” around an “inner DID Registrar”.
+
+Diagram showing Internal Secret Mode
+§
+External Secret Mode
+In this mode, the DID Registrar does not itself have access to the
+secrets used by DID operations, but it has a way of accessing an
+external wallet in order to perform cryptographic operations such as
+generating signatures.
+
+TODO: Mention how this could relate to other specs such as Universal
+Wallet or WebKMS or the WebCrypto API.
+
+Diagram showing External Secret Mode
+§
+Client-managed Secret Mode
+In this mode, the DID Registrar does not itself have access to the
+secrets used by DID operations, but it will ask the client to perform
+cryptographic operations such as generating signatures.
+
+TODO: Discuss how the did:ion use case fits in, where the client
+supplies the public keys / commitments during the create operation.
+
+Diagram showing Client-Managed Secret Mode
+§
+Operations
+§
+create()
+create(method, did, options, secret, didDocument) -> jobId, didState,
+didRegistrationMetadata, didDocumentMetadata
+This function creates a new DID and associated DID document,
+according to a known DID method, using various options and optionally
+an initial DID document.
+
+§
+update()
+update(did, options, secret, didDocumentOperation, didDocument) ->
+jobId, didState, didRegistrationMetadata, didDocumentMetadata
+This function updates the DID document associated with the DID,
+either by completely replacing it, or by performing an incremental
+update (see the didDocumentOperation input field).
+
+§
+deactivate()
+deactivate(did, options, secret) -> jobId, didState,
+didRegistrationMetadata, didDocumentMetadata
+This function deactivates the DID.
+
+§
+Input Fields
+§
+method
+This input field indicates the DID method that should be used for the
+DID operation.
+
+For the create() function, if the did input field is absent or its
+value is null, then this input field MUST NOT be null, otherwise it
+MUST be null.
+
+For the update() function and deactivate() function, this input field
+MUST be null, since the DID method is determined by the did input
+field.
+
+Possible values:
+
+btcr
+sov
+key
+web
+… other supported DID method names …
+§
+did
+This input field indicates the DID that is the target of the DID
+operation.
+
+For the create() function, this input field is OPTIONAL. Specific DID
+methods typically restrict how this input field is used.
+
+For the update() function and deactivate() function, this input field
+MUST NOT be null.
+
+§
+options
+This input field contains an object with various options for the DID
+operation, such as the network where the DID should be created.
+
+Possible keys and values:
+
+network=mainnet
+… others …
+Example:
+
+{
+  "did": null,
+  "options": {
+    "network": "mainnet"
+  },
+  "secret": { ... },
+  "didDocument": { ... }
+}
+§
+secret
+This input field contains an object with DID controller keys and
+other secrets.
+
+In Internal Secret Mode, this input field MAY contain one or more of
+the following:
+
+A verificationMethod property with a JSON array containing one or
+more Verification Method Private Data objects.
+Example:
+
+{
+  "did": null,
+  "options": { ... },
+  "secret": {
+    "verificationMethod": [{
+      "type": "JsonWebKey2020",
+      "controller": "did:example:123",
+      "purpose": ["authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation"],
+      "privateKeyJwk": {
+        "kty": "EC",
+        "d": "-s-PwFdfgcdBPTDbJwZuiAFHCuI8r9vR13OGHo14--4",
+        "crv": "secp256k1",
+        "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+        "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+      }
+    }]
+  },
+  "didDocument": { ... }
+}
+In Client-managed Secret Mode, this input field MAY contain one or
+more of the following:
+
+A verificationMethod property with a JSON array containing one or
+more Verification Method Public Data objects.
+A signingResponse property with a Signing Response Set data structure
+as a response to a Signing Request Set from the DID Registrar.
+A decryptionResponse property with a Decryption Response Set data
+structure as a response to a Decryption Request Set from the DID
+Registrar.
+Example:
+
+{
+  "did": null,
+  "options": { ... },
+  "secret": {
+    "verificationMethod": [{
+      "type": "JsonWebKey2020",
+      "controller": "did:example:123",
+      "purpose": ["authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation"],
+      "publicKeyJwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+        "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+      }
+    }]
+  },
+  "didDocument": { ... }
+}
+Example:
+
+{
+  "jobId": "155eae21-45e5-4e71-bb22-fef51cda5bf7",
+  "did": null,
+  "options": { ... },
+  "secret": {
+    "signingResponse": {
+      "signingRequest1": {
+        "signature": "<-- base64 encoded -->"
+      }
+    }
+  },
+  "didDocument": { ... }
+}
+Example:
+
+{
+  "jobId": "155eae21-45e5-4e71-bb22-fef51cda5bf7",
+  "did": null,
+  "options": { ... },
+  "secret": {
+    "decryptionResponse": {
+      "decryptionRequest1": {
+        "decryptedPayload": "<-- base64 encoded -->"
+      }
+    }
+  },
+  "didDocument": { ... }
+}
+§
+didDocumentOperation
+This input field indicates which update operation should be applied
+to a DID’s associated DID document.
+
+For the create() function, this input field MUST be absent, and is
+implied to have a single value of setDidDocument.
+
+For the update() function, this input field is OPTIONAL. If present,
+it MUST contain a JSON array of string values to indicate one or more
+DID document operations that should be performed. If it is absent, it
+is implied to have a single value of "setDidDocument".
+
+For the deactivate() function, this input field MUST be absent.
+
+This specification defines several standard values for this
+operation. Individual DID methods MAY specify other ways of executing
+an update() function.
+
+Possible values:
+
+"setDidDocument": The didDocument input field contains the new DID
+document of the DID after the DID operation is executed.
+"addToDidDocument": The didDocument input field contains properties
+to be added to the current DID document of the DID after the DID
+operation is executed.
+"removeFromDidDocument": The didDocument input field contains
+properties to be removed from the current DID document of the DID
+after the DID operation is executed.
+… other DID method-specific DID document operations …
+Example:
+
+{
+  "options": {
+    "network": "mainnet"
+  },
+  "didDocumentOperation": ["setDidDocument"],
+  "didDocument": [{
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/suites/jws-2020/v1"
+    ],
+    "id": "did:example:123",
+    "verificationMethod": [{
+      "id": "did:example:123#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:example:123",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "VCpo2LMLhn6iWku8MKvSLg2ZAoC-nlOyPVQaO3FxVeQ"
+      }
+    }]
+  }]
+}
+Example:
+
+{
+  "options": {
+    "network": "mainnet"
+  },
+  "didDocumentOperation": ["addToDidDocument",
+"removeFromDidDocument"],
+  "didDocument": [{
+      "verificationMethod": [{
+        "id": "did:example:123#key-1"
+      }]
+    },
+    {
+      "verificationMethod": [{
+        "id": "did:example:123#key-2",
+        "type": "JsonWebKey2020",
+        "controller": "did:example:123",
+        "publicKeyJwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "eylT8wroHZUY8Qv6tlMYQWFe88U0Mi5_lI8eud9xgPg"
+        }
+      }]
+    }
+  ]
+}
+Note that some of the above update operations can be internally
+transformed into others, e.g.:
+
+If the update operation is "setDidDocument", then it may be
+transformed into a combination of "addToDidDocument" and
+"removeFromDidDocument", by first resolving the current DID document,
+and then calculating incremental changes (diffs) between the resolved
+DID document and the value of the didDocument input field.
+If the update operation is either "addToDidDocument" or
+"removeFromDidDocument", then it may be transformed into
+"setDidDocument", by first resolving the current DID document, and
+then calculating the updated complete DID document after applying the
+incremental changes (diffs) in the didDocument input field.
+A DID Registrar may or may not support certain update operations, and
+it may or may not support internal transformation between them.
+
+§
+didDocument
+This input field contains either a complete DID document, or
+incremental changes in a DID document, depending on the value of the
+didDocumentOperation input field.
+
+For the create() function, this input field MUST contain a single
+JSON object value.
+
+For the update() function, this input field is OPTIONAL. If present,
+it MUST contain a JSON array of JSON object values.
+
+For the deactivate() function, this input field MUST be absent.
+
+§
+Output Fields
+§
+jobId
+When executing DID operations, an operation can turn into a
+longer-running “job”, during which the operation’s state might
+change. In order for a DID operation to complete, the DID
+create/update/deactivate functions may have to be called multiple
+times, and the jobId is used to keep track of the ongoing process.
+
+This output field MUST be absent or have a null value if the value of
+the didState.state output field is either finished or failed, and
+MUST NOT have a null value otherwise.
+
+Example:
+
+{
+  "jobId": "2a4b5d3f-7af9-44c8-a5c8-39f893fa0f78",
+  "didState": { ... },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+didState
+§
+didState.state
+This output field contains the current state of the DID operations.
+It is used to indicate if a DID operation is finished, failed, or if
+a longer-running “job” has been created that requires additional
+steps.
+
+This specification defines four well-known values for this property:
+finished, failed, action, wait. These values are further explained in
+States.
+
+The following diagram illustrates the use of the didState.state
+output field and jobId output field output fields.
+
+Diagram showing the flow and states of DID operations
+
+§
+didState.did
+This output field contains the DID at the end of the DID operation.
+
+For the create() function, if the value of the didState.state output
+field is "finished", then the value of this output field MUST NOT be
+null.
+
+For the update() function and deactivate() function, this output
+field MUST NOT be null, and its value MUST match the did input field
+that was used when executing the function.
+
+§
+didState.secret
+This output field contains an object with DID controller keys and
+other secrets.
+
+It MUST be present if the DID Registrar is operating in Internal
+Secret Mode and the returnSecrets option is set to true, and MUST NOT
+be present otherwise.
+
+In Internal Secret Mode, this output field MAY contain one or more of
+the following:
+
+A verificationMethod property with a JSON array containing one or
+more Verification Method Private Data objects.
+Example:
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "finished",
+    "did": "did:key:z6MknhhUUtbXCLRmUVhYG7LPPWN4CTKWXTLsygHMD6Ah5uDN",
+    "secret": {
+      "verificationMethod": [{
+        "type": "JsonWebKey2020",
+        "controller": "did:example:123",
+        "purpose": ["authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation"],
+        "privateKeyJwk": {
+          "kty": "EC",
+          "d": "-s-PwFdfgcdBPTDbJwZuiAFHCuI8r9vR13OGHo14--4",
+          "crv": "secp256k1",
+          "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+          "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+        }
+      }]
+    },
+    "didDocument": { ... }
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+In Client-managed Secret Mode, this output field MAY contain one or
+more of the following:
+
+A verificationMethod property with a JSON array containing one or
+more Verification Method Public Data objects.
+Example:
+
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "finished",
+    "did": "did:key:z6MknhhUUtbXCLRmUVhYG7LPPWN4CTKWXTLsygHMD6Ah5uDN",
+    "secret": {
+      "verificationMethod": [{
+        "type": "JsonWebKey2020",
+        "controller": "did:example:123",
+        "purpose": ["authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation"],
+        "publicKeyJwk": {
+          "kty": "EC",
+          "crv": "secp256k1",
+          "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+          "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+        }
+      }]
+    },
+    "didDocument": { ... }
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+The didState.secret output field MAY contain additional properties
+that are considered secrets, such as seeds, passwords, etc.
+
+§
+didState.didDocument
+This output field contains the DID document after the DID operation
+has been successfully executed.
+
+This output field is OPTIONAL.
+
+Example:
+
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1"
+  ],
+  "id": "did:example:123",
+  "verificationMethod": [{
+    "type": "Ed25519VerificationKey2018",
+    "id": "did:example:123#key-1",
+    "publicKeyBase58": "EqRvGzVX3aoLYwZSdKhNd2q5Ez7EVbdPA4DVZW3ngn1U"
+  }],
+  "authentication": ["did:example:123#key-1"],
+  "assertionMethod": ["did:example:123#key-1"]
+}
+§
+didRegistrationMetadata
+This output field contains metadata about the registration process
+itself.
+
+Possible uses of the didRegistrationMetadata output field:
+
+Duration of the DID registration process.
+Various URLs, IP addresses or other network information that was used
+during the DID registration process.
+Current balance or other information about tokens or cryptocurrencies
+that were used during the DID registration process.
+Information about third parties that were involved in the DID
+registration process, such as trust anchors, onboarding services,
+transaction endorsers, etc.
+Proofs added by a DID registrar (e.g. to establish trusted
+registration).
+§
+didDocumentMetadata
+This output field contains metadata about the DID’s associated DID
+document.
+
+Possible uses of the didDocumentMetadata output field:
+
+Hash values, smart contract addresses, blockchain heights,
+transaction numbers, etc.
+Proofs added by a DID controller (e.g. to establish control
+authority).
+§
+States
+The following sections explain the possible states of a DID
+registration process, which are returned as values of the
+didState.state output field.
+
+§
+didState.state="finished"
+This state indicates that the DID operation has been completed.
+
+Example:
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "finished",
+    "did": "did:key:z6MknhhUUtbXCLRmUVhYG7LPPWN4CTKWXTLsygHMD6Ah5uDN",
+    "secret": { ... },
+    "didDocument": { ... }
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+didState.state="failed"
+This state indicates that the DID operation has failed.
+
+In this state, the didState output field MUST contain a reason
+property that indicates the reason for the failure.
+
+The didState output field MAY contain additional properties that are
+relevant to this state.
+
+Example:
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "failed",
+    "did": "did:key:z6MknhhUUtbXCLRmUVhYG7LPPWN4CTKWXTLsygHMD6Ah5uDN",
+    "reason": "networkUnavailable"
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+didState.state="action"
+This state indicates that the client needs to perform an action,
+before the DID operation can be continued.
+
+Possible uses for didState.state="action":
+
+Client needs to perform an action at an external service
+Client needs to perform a cryptographic operation, e.g. generate a
+signature
+Client needs to send coins to fund a wallet
+Client needs to accept the terms of a legal agreement
+Client needs to upload a file to a webserver
+In this state, the didState output field MUST contain an action
+property that indicates the type of action that needs to be performed.
+
+The didState output field MAY contain additional properties that are
+relevant to this state.
+
+This specification defines the following well-known values for the
+action property that may be used in this state:
+
+didState.action="redirect" - Client needs to be redirected to a web
+page, e.g. an onboarding service.
+didState.action="getVerificationMethod" - Client needs to provide a
+newly generated or already existing verification method.
+didState.action="signPayload" - Client needs to generate a signature
+on a payload.
+didState.action="decryptPayload" - Client needs to decrypt a payload.
+Example:
+
+{
+  "jobId": "155eae21-45e5-4e71-bb22-fef51cda5bf7",
+  "didState": {
+    "state": "action",
+    "action": "fundingRequired",
+    "description": "Please fund the address
+mzUC2F1XgXfTJEYUBZXdG6M8wWWvhgEknG."
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+didState.action="redirect"
+This action indicates that the client needs to be redirected to a web
+page, e.g. an onboarding service where the DID controller takes
+certain steps, before the DID operation can be continued.
+
+With this action, the didState output field MUST contain a
+redirectUrl property, which indicates the URL of the web page where
+the client needs to be redirected.
+
+The didState output field MAY contain additional properties that are
+relevant to this action.
+
+TODO: How does this work exactly if the client is not browser-based?
+
+TODO: Does this need features from other well-known redirect-based
+protocols (e.g. OAuth), such as callback URLs, nonces, states, etc.?
+
+Example:
+
+{
+  "jobId": "155eae21-45e5-4e71-bb22-fef51cda5bf7",
+  "didState": {
+    "state": "action",
+    "action": "redirect",
+    "redirectUrl" : "https://..."
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+didState.action="getVerificationMethod"
+This action indicates that the client needs to provide a newly
+generated or already existing verification method, before the DID
+operation can be continued.
+
+This action is used in Client Managed Secret Mode.
+
+The didState output field MUST contain a property
+verificationMethodTemplate with a JSON array containing one or more
+Verification Method Template data structures.
+
+The didState output field MAY contain additional properties that are
+relevant to this action.
+
+TODO: Generated VM must then be included in either “secret” or
+“didDocument” in next request.
+
+Example:
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "action",
+    "action": "getVerificationMethod",
+    "verificationMethodTemplate": [{
+      "id": "#key-1",
+      "type": "Ed25519VerificationKey2018"
+    }]
+  },
+  "didRegistrationMetadata": {},
+  "didDocumentMetadata": {}
+}
+Example:
+
+{
+  "jobId": null,
+  "didState": {
+    "state": "action",
+    "action": "getVerificationMethod",
+    "verificationMethodTemplate": [{
+      "purpose": ["recovery"],
+      "type": "EcdsaSecp256k1VerificationKey2019"
+    }]
+  },
+  "didRegistrationMetadata": {},
+  "didDocumentMetadata": {}
+}
+§
+didState.action="signPayload"
+This action indicates that the client needs to generate a signature
+on a payload, before the DID operation can be continued.
+
+This action is used in Client Managed Secret Mode.
+
+The didState output field MUST contain a property signingRequest with
+a Signing Request Set data structure.
+
+The didState output field MAY contain additional properties that are
+relevant to this action.
+
+TODO: Mention how this could relate to other specs such as Universal
+Wallet or WebKMS or the WebCrypto API.
+
+Example:
+
+{
+  "jobId": "1234",
+  "didState": {
+    "state": "action",
+    "action": "signPayload",
+    "signingRequest": {
+      "signingRequest1": {
+        "payload": {
+          ...
+        },
+        "serializedPayload": "<-base64->",
+        "kid": "did:example:123#key-0",
+        "alg": "EdDSA",
+        "purpose": ".." // describes the purpose of the requested
+signature
+      },
+      "signingRequest2": {
+        "serializedPayload": "<-base64->",
+        "kid": null,
+        "alg": "ES256K"
+      }
+    }
+  },
+  "didRegistrationMetadata": {},
+  "didDocumentMetadata": {}
+}
+§
+didState.action="decryptPayload"
+This action indicates that the client needs to decrypt a payload,
+before the DID operation can be continued.
+
+This action is used in Client Managed Secret Mode.
+
+The didState output field MUST contain a property decryptionRequest
+with a Decryption Request Set data structure.
+
+The didState output field MAY contain additional properties that are
+relevant to this action.
+
+TODO: Mention how this could relate to other specs such as Universal
+Wallet or WebKMS or the WebCrypto API.
+
+Example:
+
+{
+  "jobId": "1234",
+  "didState": {
+    "state": "action",
+    "action": "decryptPayload",
+    "decryptionRequest": {
+      "decryptionRequest1": {
+        "encryptedPayload": "<-base64->",
+        "kid": null,
+        "enc": "A128GCM"
+      },
+      "decryptionRequest2": {
+        "encryptedPayload": "<-base64->",
+        "kid": null,
+        "enc": "A256GCM"
+      }
+    }
+  },
+  "didRegistrationMetadata": {},
+  "didDocumentMetadata": {}
+}
+§
+didState.state="wait"
+This state indicates that the client needs to wait, before the DID
+operation can be continued.
+
+Possible uses for didState.state="wait":
+
+Client needs to wait for confirmation on chain
+Client needs to wait for approval by someone
+In this state, the didState output field MUST contain a wait
+property, and MAY contain additional properties, to explain the
+reason for the failure.
+
+Example:
+
+{
+  "jobId": "155eae21-45e5-4e71-bb22-fef51cda5bf7",
+  "didState": {
+    "state": "wait",
+    "wait": "Please wait until the transaction is complete.",
+    "waitTime": 3600000
+  },
+  "didRegistrationMetadata": { ... },
+  "didDocumentMetadata": { ... }
+}
+§
+Data Structures
+This specification defines a number of data structures that appear in
+the input fields and output fields.
+
+§
+Verification Method Public Data
+This data structure is used when public data about a verification
+method is exchanged between the client and the DID Registrar, as
+follows:
+
+In Client-managed Secret Mode inside the secret input field, when the
+client invokes the DID Registrar again after it received a
+didState.action="getVerificationMethod" output field.
+In Client-managed Secret Mode inside the didState.secret output
+field, when the DID Registrar responds to a client request.
+A Verification Method Public Data structure is a JSON object based on
+the verification method data model as defined by [DID-CORE], with the
+following differences:
+
+The id property is OPTIONAL.
+If it is present, its value MUST match the id property of the
+corresponding verification method in the DID’s associated DID
+document.
+If it is absent, then the verification method does not correspond to
+any verification method in the DID’s associated DID document.
+The JSON object MAY contain a property purpose, and the value of that
+property MUST be a JSON array, which contains verification
+relationships such as authentication or assertionMethod.
+Example:
+
+{
+  "id": "did:example:123#key-0",
+  "type": "JsonWebKey2020",
+  "controller": "did:example:123",
+  "purpose": ["authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation"],
+  "publicKeyJwk": {
+    "kty": "EC",
+    "crv": "secp256k1",
+    "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+    "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+  }
+}
+Example:
+
+{
+  "type": "Ed25519VerificationKey2020",
+  "controller": "did:example:123",
+  "purpose": ["recovery"],
+  "publicKeyMultibase":
+"z5TVraf9itbKXrRvt2DSS95Gw4vqU3CHAdetoufdcKazA"
+}
+§
+Verification Method Private Data
+This data structure is used when private data about a verification
+method is exchanged between the client and the DID Registrar, as
+follows:
+
+In Internal Secret Mode inside the secret input field, when the
+client invokes the DID Registrar again after it received a
+didState.action="getVerificationMethod" output field.
+In Internal Secret Mode inside the didState.secret output field, when
+the DID Registrar responds to a client request.
+A Verification Method Private Data structure is a JSON object based
+on the Verification Method Public Data structure, with the following
+difference:
+
+Instead of containing properties such as publicKeyJwk or
+publicKeyMultibase for expressing verification material, the
+verification method contains corresponding private key material,
+using properties such as privateKeyJwk or privateKeyMultibase.
+Example:
+
+{
+  "id": "did:example:123#key-0",
+  "type": "JsonWebKey2020",
+  "controller": "did:example:123",
+  "purpose": [ "authentication", "assertionMethod",
+"capabilityDelegation", "capabilityInvocation" ],
+  "privateKeyJwk": {
+    "kty": "EC",
+    "d": "-s-PwFdfgcdBPTDbJwZuiAFHCuI8r9vR13OGHo14--4",
+    "crv": "secp256k1",
+    "x": "htusHse5FMBnT_4266kn9T2yMmjDllwWvVSc_I2-WZ0",
+    "y": "RjE_GjsRMELYJ6XuNSFDu3mCbyJnCQ26X_YtmyM9Bfo"
+  }
+}
+Example:
+
+{
+  "type": "Ed25519VerificationKey2020",
+  "controller": "did:example:123",
+  "purpose": ["recovery"],
+  "privateKeyMultibase":
+"z5TVraf9itbKXrRvt2DSS95Gw4vqU3CHAdetoufdcKazA"
+}
+§
+Verification Method Template
+This data structure is used as follows:
+
+In Client-managed Secret Mode inside the didState.state output field,
+when the DID Registrar responds to a client request with a
+didState.action="getVerificationMethod" output field.
+A Verification Method Template structure is a JSON object based on
+the verification method data model as defined by [DID-CORE], with the
+following differences:
+
+The id property is OPTIONAL.
+If it is present, its value MUST match the id property of the
+corresponding verification method in the DID’s associated DID
+document.
+If it is absent, then the verification method does not correspond to
+any verification method in the DID’s associated DID document.
+The type property is OPTIONAL.
+The controller property is OPTIONAL.
+The JSON object MAY contain a property purpose, and the value of that
+property MUST be a JSON array, which contains verification
+relationships such as authentication or assertionMethod.
+The JSON object does not contain properties such as publicKeyJwk or
+publicKeyMultibase for expressing verification material.
+Example Verification Method Template containing properties id and
+type:
+
+{
+  "id": "#key-1",
+  "type": "Ed25519VerificationKey2018"
+}
+Example Verification Method Template containing properties purpose
+and type:
+
+{
+  "purpose": ["recovery"],
+  "type": "EcdsaSecp256k1VerificationKey2019"
+}
+§
+Signing Request Set
+This data structure is used as follows:
+
+In Client-managed Secret Mode inside the didState.state output field,
+when the DID Registrar responds to a client request with a
+didState.action="signPayload" output field.
+A Signing Request Set structure is a JSON object. Each property name
+in that JSON object is called a signing request ID, and the
+corresponding property value MUST be a JSON object which is called
+the Signing Request.
+
+A Signing Request contains the following properties:
+
+payload: The payload to be signed in a JSON form for informational
+purposes. This property is OPTIONAL.
+serializedPayload: The Base64-encoded byte array that represents the
+serialized payload to be signed. This property is REQUIRED.
+kid: This property is interpreted as in [RFC7517] to indicate a
+specific key that should be used for signing. Example value:
+did:example:123#key-0. This property is OPTIONAL.
+alg: This property is interpreted as in [RFC7515] to indicate the
+cryptographic algorithm to be used to sign the payload. Example
+values: EdDSA, ES256K, PS256. This property is REQUIRED.
+purpose: This property indicates the specific intent of the signing
+process. Example value: authentication. This property is OPTIONAL.
+Example Signing Request Set containing two Signing Requests with IDs
+signingRequest1 and signingRequest2:
+
+{
+  "signingRequest1": {
+    "payload": {
+      ...
+    },
+    "serializedPayload": "<-base64->",
+    "kid": "did:example:123#key-0",
+    "alg": "EdDSA",
+    "purpose": ".." // describes the purpose of the requested
+signature
+  },
+  "signingRequest2": {
+    "serializedPayload": "<-base64->",
+    "kid": null,
+    "alg": "ES256K"
+  }
+}
+§
+Signing Response Set
+This data structure is used as follows:
+
+In Client-managed Secret Mode inside the secret input field, when the
+client invokes the DID Registrar again after it received a
+didState.action="signPayload" output field.
+A Signing Response Set structure is a JSON object. Each property name
+MUST match a signing request ID which was previously received by the
+client in a Signing Request Set. The corresponding property value
+MUST be a JSON object which is called the Signing Response.
+
+A Signing Response contains the following properties:
+
+signature: The Base64-encoded byte array that represents the
+signature of a payload. This property is REQUIRED.
+Example Signing Response Set containing two Signing Responses:
+
+{
+  "signingRequest1": {
+    "signature": "<-base64->"
+  },
+  "signingRequest2": {
+    "signature": "<-base64->"
+  }
+}
+§
+Decryption Request Set
+This data structure is used as follows:
+
+In Client-managed Secret Mode inside the didState.state output field,
+when the DID Registrar responds to a client request with a
+didState.action="decryptPayload" output field.
+A Decryption Request Set structure is a JSON object. Each property
+name in that JSON object is called a decryption request ID, and the
+corresponding property value MUST be a JSON object which is called
+the Decryption Request.
+
+A Decryption Request contains the following properties:
+
+payload: The payload to be signed in a JSON form for informational
+purposes. This property is OPTIONAL.
+encryptedPayload: The Base64-encoded byte array that represents the
+encrypted payload to be decrypted. This property is REQUIRED.
+kid: This property is interpreted as in [RFC7517] to indicate a
+specific key that should be used for decryption. Example value:
+did:example:123#key-0. This property is OPTIONAL.
+enc: This property is interpreted as in [RFC7516] to indicate the
+cryptographic algorithm to be used to decrypt the payload. Example
+values: A128GCM, A256GCM. This property is REQUIRED.
+purpose: This property indicates the specific intent of the
+decryption process. Example value: parsing. This property is OPTIONAL.
+Example Decryption Request Set containing two Decryption Requests
+with IDs decryptionRequest1 and decryptionRequest2:
+
+{
+  "decryptionRequest1": {
+    "encryptedPayload": "<-base64->",
+    "kid": null,
+    "enc": "A128GCM"
+  },
+  "decryptionRequest2": {
+    "encryptedPayload": "<-base64->",
+    "kid": null,
+    "enc": "A256GCM"
+  }
+}
+§
+Decryption Response Set
+This data structure is used as follows:
+
+In Client-managed Secret Mode inside the secret input field, when the
+client invokes the DID Registrar again after it received a
+didState.action="decryptPayload" output field.
+A Decryption Response Set structure is a JSON object. Each property
+name MUST match a decryption request ID which was previously received
+by the client in a Decryption Request Set. The corresponding property
+value MUST be a JSON object which is called the Decryption Response.
+
+A Decryption Response contains the following properties:
+
+decryptedPayload: The Base64-encoded byte array that represents the
+decrypted payload. This property is REQUIRED.
+Example Decryption Response Set containing two Decryption Responses:
+
+{
+  "decryptionRequest1": {
+    "decryptedPayload": "<-base64->"
+  },
+  "decryptionRequest2": {
+    "decryptedPayload": "<-base64->"
+  }
+}
+§
+Implementation Considerations
+In order to implement a library or tool that supports the above
+interfaces for creating, updating, and deactivating DIDs in a
+method-agnostic way, we can imagine a similar architecture as is
+common for a DID resolver, i.e. using a set of drivers that perform
+method-specific operations.
+
+Some architectural questions that apply to a DID Resolver also apply
+to a DID Registrar, e.g.:
+
+Is the abstract interface implemented as a library that can be
+integrated locally into an application or service, or is the abstract
+interface exposed by a remote service and used via HTTP or another
+binding?
+How do method-specific drivers interact with the DID’s target
+system? For example, do they have direct access to a blockchain full
+node?
+What are implications of the above questions for trust and security?
+§
+HTTPS Binding
+The abstract interfaces defined by this specification can be
+implemented and deployed in the form of bindings to different
+concrete protocols and transports. This section defines a binding
+based on HTTP POST operations, with inputs and outputs sent in the
+HTTP body, encoded as JSON.
+
+In this binding, a secure HTTPS connection with at least TLS 1.2 MUST
+be used.
+
+Each one of the three operations can be invoked via a separate HTTPS
+endpoint, for example:
+
+https://uniregistrar.io/1.0/create
+https://uniregistrar.io/1.0/update
+https://uniregistrar.io/1.0/deactivate
+The following HTTP status codes are used for the create() function:
+
+200, if the request was successful, but the DID may not be fully
+created yet, as indicated by the didState.state output field.
+201, if the DID has been successfully created, as indicated by the
+didState.state output field.
+400, if a problem with the input fields has occurred.
+500, if an internal error has occurred.
+The following HTTP status codes are used for the update() function:
+
+200, if request was successful, and the DID may or may not be fully
+updated yet, as indicated by the didState.state output field.
+400, if a problem with the input fields has occurred.
+500, if an internal error has occurred.
+The following HTTP status codes are used for the deactivate()
+function operation:
+
+200, if request was successful, and the DID may or may not be fully
+deactivated yet, as indicated by the didState.state output field.
+400, if a problem with the input fields has occurred.
+500, if an internal error has occurred.
+See here for an OpenAPI definition.
+
+§
+Normative References
+DID-CORE
+Decentralized Identifiers (DIDs) v1.0. Drummond Reed; Manu Sporny;
+Markus Sabadello; Dave Longley; Christopher Allen; Jonathan Holt;
+2020-09-07. Status: WD.
+RFC7515
+JSON Web Signature (JWS). M. Jones; J. Bradley; N. Sakimura; 2015-05.
+Status: Proposed Standard.
+RFC7516
+JSON Web Encryption (JWE). M. Jones; J. Hildebrand; 2015-05. Status:
+Proposed Standard.
+RFC7517
+JSON Web Key (JWK). M. Jones; 2015-05. Status: Proposed Standard.
+§
+Appendix
+§
+Other Resources
+The following projects are working on DID registration across
+different DID methods.
+
+DIF Universal Registrar
+Universal Services
+ACA-py
+aries-framework-go
+Veramo
+DIDKit
+?
+
+
+24
+Specify additional HTTP status codes
+
+
+19
+Define a way to polyfill method specific driver in to a browser API
+
+
+
+12
+Support returned secrets in encrypted form
+
+
+
+10
+Including public keys in client-managed secret mode
+
+
+9
+Expiration of "action" states
+
+
+3
+Specify signing requests / interface with wallets
+
+
+
+
+1
+Onboarding/Accessing DID Registries
+
+
+    didState  <····· action := "redirect" | "getVerificationMethod" | "signPayload" | "decryptPayload"
+    =============
+    - state        := "finished" | "failed" | "action" | "wait"
+    - did
+    - secret
+    - didDocument
+
+
+[[}]]

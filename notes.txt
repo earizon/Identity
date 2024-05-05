@@ -1,0 +1,77 @@
+# Definitions: [[{]]
+* attributes: inherent (fingerprint,...), accumulated (medical history, preferences, ...),
+  assigned (DNI). Note in W3C, Verifiable credentials map to accumulated|assigned attributes.
+
+* Role: Identity, Certifier, information sources, service provider, observer, regulator.
+
+* Claim: "I agree with a given statement about a person/identity"
+
+* (W3C) Verifiable Claim: A claim whose origin can be probed by cryptgraphic means.
+
+* ECDH | Elliptic-curve Diffie–Hellman <https://datatracker.ietf.org/doc/html/rfc6090>
+  Diffie-Hellman allows to establish a common shared private key over an insecure channel,
+  Elliptic-curve makes this faster (WARN: but maybe more insecure that standard RSA due
+  to the bigger complexity).!!
+* eID, German eID system:
+  <https://www.bsi.bund.de/DE/Themen/Unternehmen-und-Organisationen/Standards-und-Zertifizierung/Technische-Richtlinien/TR-nach-Thema-sortiert/tr03127/TR-03127_node.html>
+* eID-Server, eID-Server for Online-Authentication based on Extended 
+  Access Control Version 2 (EAC2) between an eService and an eIDAS 
+  token, e.g. the German National Identity Card, the German electronic 
+  Residence Permit, the eID-Card for Union Citizens or an 
+  EAC-compatible mobile eID based on secure storage on a mobile device, 
+  that was derived from one of the former documents.<br/>
+  <https://www.bsi.bund.de/DE/Themen/Unternehmen-und-Organisationen/Standards-und-Zertifizierung/Technische-Richtlinien/TR-nach-Thema-sortiert/tr03130/TR-03130_node.html>
+* eIDAS: (e)lectronic (Id)entification, (A)uthentication and Trust (S)ervices regulatory framework. 
+  by the European Parliament and of the Council amending Regulation (EU). 
+  Version 2 add the rules for Self Souverign Identity.<br/>
+  <https://www.europarl.europa.eu/doceo/document/TA-9-2024-0117_EN.html>
+* HMAC  <hhttps://datatracker.ietf.org/doc/html/rfc6234>
+* ISO mdoc: PID presentation format, ISO 18013-5.
+* Issuer: entity issuing credentials to a Holder. <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html>
+* LoA: Level of Assurance, <https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/eIDAS+Levels+of+Assurance), [BSI TR-03107](https://www.bsi.bund.de/DE/Themen/Unternehmen-und-Organisationen/Standards-und-Zertifizierung/Technische-Richtlinien/TR-nach-Thema-sortiert/tr03107/TR-03107_node.html>
+* MAC: Message Authentication Code <https://datatracker.ietf.org/doc/html/rfc8446>
+* OpenID4VCI | OpenID for Verifiable Credential Issuance | OAuth protected API for the issuance of Verifiable Credentials. | [OpenID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html).
+* OpenID4VP, OpenID for Verifiable Presentations. A mechanism on top of OAuth 2.0 [RFC6749] that enables presentation of Verifiable Credentials as Verifiable Presentations. <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html>
+* PID, person identification data as defined by [eIDAS 2.<https://www.europarl.europa.eu/doceo/document/TA-9-2024-0117_EN.html>
+* PoP: Proof of Possession
+* QES: Qualified Electronic Signature, an advanced electronic signature that is created by a qualified electronic signature creation device, and which is based on a qualified certificate for electronic signatures.
+* QTSP: Qualified Trust Service Provider 
+* RP | Relying Party <https://www.europarl.europa.eu/doceo/document/TA-9-2024-0117_EN.html> Article 3 (6)
+* SD-JWT | Selective Disclosure for JWT 
+* SD-JWT VC | SD-JWT-based Verifiable Credentials | Verifiable Credentials with JSON payloads with and without selective disclosure based on the SD-JWT format. <https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/>
+* SE, Secure Element (for mobile platforms) : <https://www.bsi.bund.de/EN/Themen/Unternehmen-und-Organisationen/Standards-und-Zertifizierung/Secure-Elements/secure-elements_node.html>
+* Smart-eID, it enables citizens to store their electronic proof of identity directly in their smartphones. |
+<http://www.bgbl.de/xaver/bgbl/start.xav?startbk=Bundesanzeiger_BGBl&jumpTo=bgbl121s2281.pdf>
+* VC: Verifiable Credential | A credential created by an Issuer in a way that the integrity and authenticity of the credential can be cryptographically verified. <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html>
+* WSCD: Wallet Secure Cryptographic Device.
+
+[[}]]
+
+# Hidden cost of broken Identity 
+
+[[{doc_has.report]]
+
+* The 2017 Hiscox Cyber Readiness Reportestimates that cybercrime and
+  data breaches currently cost the global economy US $450 billion per
+  year.
+* The 2016 Cybersecurity Market Reportpredicts cybercrime damages
+  will cost the global economy a total of US $6 trillion by 2021.
+* The U.S. Public Interest Research Group estimatesconsumers will
+  have to directly shell out a collective US $4.1 billion to freeze
+  their credit reports and prevent fraudsters from using personal
+  information possibly exposed in the massive data breach at Equifax.11
+* IDG estimates that theft of trade secretscosts every nation from 1
+  TO 3 percent of their gross domestic product (GDP), for a total
+  ranging from US $749 billion to $2.2 trillion annually.
+
+* Kim Cameron, Chief Architect of Identity at Microsoft, famously said
+  in the preface to his Seven Laws of Identity, “The Internet was
+  built without an identity layer.” In other words, we are
+  backfilling for identity and security on a network where in the early
+  days “everybody knew everybody” and trust was so implicit that
+  routing tables for IP addresses were coded by hand. By contrast the
+  ten current Internet Engineering Task Force (IETF) standards for DNS
+  security alone run to over 500 pages.
+  https://www.identityblog.com/stories/2005/05/13/TheLawsOfIdentity.pdf
+
+[[doc_has.report}]]

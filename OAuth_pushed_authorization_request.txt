@@ -1,0 +1,2 @@
+# OAuth 2.0 Pushed Authorization Request
+* (https://oauth.net/2/pushed-authorization-requests/)

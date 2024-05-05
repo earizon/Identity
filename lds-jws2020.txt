@@ -1,0 +1,6 @@
+## LDS JWS 2020
+<https://www.w3.org/community/reports/credentials/CG-FINAL-lds-jws2020-20220721/>
+* Specification describing a JSON Web Signature Suite created in 2020 
+  for the Linked Data Proof specification. The Signature Suite utilizes 
+  Detached JWS signatures to provide support for a subset of the 
+  digital signature algorithms registered with IANA.

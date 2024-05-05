@@ -1,0 +1,3 @@
+# OAuth Status Attestations [[{VC.revocation,PM.TODO.now,]]
+* <https://datatracker.ietf.org/doc/draft-demarco-oauth-status-attestations/>
+[[}]]

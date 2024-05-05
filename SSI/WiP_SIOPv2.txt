@@ -1,0 +1,427 @@
+Self-Issued OpenID Provider v2 - draft 13
+
+* <https://openid.net/specs/openid-connect-self-issued-v2-1_0.html>
+* ussually written by the SIOP acronym.
+* scope of spec: extension to Chapter 7 SIOP in [OpenID.Core].
+* OpenID Connect core: ID-Token signed by the (truted-by-RP) OP. 
+  identified by the iss claim.
+* SIOP: ID Token self-signed by user, with `sub`==`iss` claims.
+  The Self-Issued OP can also present cryptographically VC issued by 3rd-party
+  sources trusted by the RP.
+* SIOPv2 makes use of Cryptographically Verifiable Identifier, an special
+  type of identifier that is either based upon or resolves to cryptographic
+  key material that can be used to verify a signature on the ID Token or
+  the Self-Issued Request.
+
+* SIOPv2 extends OpenID Connect Core in the following ways:
+  * mechanisms for how the RP invokes/opens a Self-Issued OP.
+  * mechanisms for how the RP discovers Self-issued OP's metadata
+    such as authorization endpoint.
+  * mechanisms for how the Self-Issued OPs obtain RP metadata both
+    with or without RP pre-registering with the Self-Issued OP.
+  * Self-Issued ID Token, defining additional claims and processing
+    requirements of ID Tokens issued by Self-Issued OPs.
+    (iss == sub)
+  * transporting claims in a Self-Issued ID Token that are not
+    verifiable by the RP.
+
+* Presentation of Claims from the 3rd-Party Issuers is out of scope and
+  defined in [OpenID4VP], which extends OAuth 2.0 to enable presentation 
+  of VC, supporting W3C Verifiable Credentials and ISO/IEC
+  18013-5:2021 mdoc as well as other credential formats.
+
+* Section 7 of [OpenID.Core] (Self-Issued OpenID Provider) is extended 
+  with: 
+  * Added support for Decentralized Identifiers defined in [DID-Core]
+  * Added support for Cross-Device Self-Issued OP model.
+
+  RP                     SIOP       End-User
+   +                      +             +
+   |                      |             |
+   |--(1) SIOP Request -->|             |
+   |      (Autho.Request) |             |
+   |                      |             |
+   |                      |             |
+   |                      |             |
+   |                      |             |
+   |                      |<-(2) AuthN->|
+   |                      |   & AuthZ   |
+   |                      |             |
+   |                      |             |
+   |<---(3) SIOP Response-|             |
+   |        (SI) ID Token |             |
+   |                      |             |
+   +                      +             +
+
+
+## Cross-Device Self-Issued OP: (Section 4)
+
+* SIOPv2 protocol flows: 
+  * Same-Device SIOP model: SIOP device  == End-User's user interaction device.
+    for example a web browser with a web wallet.
+  * Cross-device SIOP model: SIOP device != End-User's user interaction device.
+    In contrast to same-device scenarios, neither RP nor SIOP ("wallet") can
+    communicate to each other via HTTP redirects through a user agent.
+    1. RP prepares a Self-Issued Request and renders it as a QR code.
+       (others than QR mechanisms could be used).
+    1. End-User scans the QR code and Self-Issued OP invoked on the smartphone 
+       (custom URL scheme or claimed URLs).
+    1. Upon completion, SIOP directly sends an HTTPS POST request with the
+       Authorization Response to an endpoint exposed by the RP.
+
+## 5. Self-Issued OpenID Provider Invocation
+   Two scenarios of how to reach and invoke an application that can process that request:
+   * scenario 1: request encoded in QR code/link and scanned with SIOP app.
+     (no need to be intended for a specific authorization_endpoint).
+     non-normative request example with RP pre-registered to SIOP/wallet:
+     ```
+     client_id=https%3A%2F%2Fclient.example.org%2Fcb
+     &request_uri=https%3A%2F%2Fclient.example.org%2Frequest%2Fsome_request_Id
+     ```
+   * scenario 2: request includes Authorization_endpoint of a SIOP and will open the 
+     SIOP (wallet) app. 2 ways on how the RP can obtain the Authorization_endpoint
+     of SIOP to construct a targeted request:
+     * using the static set of Self-Issued OP metadata, or 
+     * pre-obtaining authorization_endpoint. (Section 6)
+
+## 6. Self-Issued OpenID Provider Discovery
+
+Possibilities include:
+* pre-agreed static configuration values.
+* Dynamic Discovery as defined in Section 6.1.
+  (See original doc for details)
+
+## 6.2. Choice of authorization_endpoint
+*  As the authorization_endpoint of a Self-Issued OP, the use of 
+   Universal Links or App Links is RECOMMENDED over the use of custom 
+   URL schemes. See Section 13.4 for details. [[{PM.TODO.now}]]
+   * Custom siopv2:// like schemes are dangerous since an attacker
+   can create a fake app that responds to it.
+    Browsers/OSes typically has a process by which native applications
+   and websites can register support that one or more apps be called when an
+   HTTPS URI is triggered in lieu of a system browser. <br/>
+    This feature goes by several names including "App Links" and 
+   "Universal Links", and MAY be used to invoke an installed/registered
+   Self-Issued OP.
+* If no appropriate application has been rendered, the request for a SIOP will go to
+  a browser, which MAY display additional information 
+
+## 7. Relying Party Registration
+* SIOP/wallet options to obtain RP's metadata include:
+  * out-of-band mechanisms. See Section 7.1 for the details.
+    non-normative example of same-device request when RP is pre-registered to the
+    SIOP (wallet). 
+      ```
+      HTTP/1.1 302 Found
+      Location:  https://wallet.example.com/universal-link?
+        response_type=id_token
+        &client_id=s6BhdRkqt3
+        &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+        &scope=openid%20profile
+        &nonce=n-0S6_WzA2Mj
+      ```
+  * RP provides metadata to Self-Issued OP just-in-time in OP Request.
+    using one of the following mechanisms defined in this specification:
+    * client_id equals redirect_uri
+      As defined in Section X.X of [OpenID4VP].
+    * OpenID Federation 1.0 Automatic Registration, per [OpenID.Federation]
+      As defined in Section X.X of [OpenID4VP].  Non-normative example:
+      ```
+      "client_id": "https://client.example.org"
+      ```
+    * Decentralized Identifiers: **allows SIOPv2 to be used in deployments
+      models where the Self-Issued OP does not or cannot support pre-registration
+      of Client metadata**.<br/>
+      Non-normative example of client_id resolvable using DID Resolution:
+      ```
+      "client_id": "did:example:EiDrihTRe0GMdc3K16kgJB3Xbl9Hb8oqVHjzm6ufHcYDGA"
+      ```
+      Non-normative example of a request when the RP is not pre-registered with
+      the Self-Issued OP and uses Decentralized Identifier Resolution.
+      ```
+      siopv2://?
+        client_id=did%3Aexample%3AEiDri
+        &request_uri=https%3A%2F%2Fclient.example.org%2Frequest%2Fsome_request_id
+      ```
+      Non-normative example of Request Object referenced by the request_uri.
+      signed with ES256, using keys obtained from DID-Document before base64url encoding:
+
+      ```
+      | { "alg": "ES256", "kid": "did:example:EiDri#sign1", "typ": "JWT" }.
+      | {
+      |   "client_id": "did:example:EiDri",
+      |   "scope": "openid profile",
+      |   "response_type": "id_token",
+      |   "redirect_uri": "https://client.example.org/cb",
+      |   "client_metadata": {
+      |     "subject_syntax_types_supported": [ "did:example" ],
+      |     "id_token_signed_response_alg": "ES256"
+      |   },
+      |   "nonce": "n-0S6_WzA2Mj"
+      | }.[signature]
+      ```
+
+See original doc for details about sharing Relying Party Client Metadata with SIOP.
+
+* (sec.7.4)When SIOP(wallet) receives a pre-registered Client ID (sec.7.1) but
+  client_metadata(_uri) (sec 7.2) are also present, SIOP MUST return an error.
+
+## 7.5. Relying Party Metadata Values
+  `subject_syntax_types_supported` extension (REQUIRED) allows the RP to provide
+  information about itself to the Self-Issued OP:
+  := JSON array of strings representing URI scheme identifiers and optionally method
+  names of supported Subject Syntax Types defined in Section 8.
+  * When Subject Syntax Type is JWK Thumbprint, a valid value is
+    `urn:ietf:params:oauth:jwk-thumbprint` defined in [RFC9278].
+  * When Subject Syntax Type is Decentralized Identifier, valid values
+    MUST be a did:method.
+  * Other client metadata parameters defined in [OpenID.Registration] MAY be used.
+    Examples are:
+    * explanatory parameters such as policy_uri, tos_uri, and logo_uri.
+    * redirect_uris.
+    * If RP requests encrypted responses, it would typically use the
+      jwks_uri, id_token_encrypted_response_alg and id_token_encrypted_response_enc
+      parameters.
+    non-normative example of the supported RP parameter Values:
+    ```
+    {
+      "subject_syntax_types_supported": [
+        "urn:ietf:params:oauth:jwk-thumbprint",
+        "did:example",
+        "did:key"
+      ]
+    }
+    ```
+
+8. Subject Syntax Types
+
+two Subject Syntax Types are defined:
+* JWK Thumbprint subject syntax type:  sub Claim value MUST be the base64url encoded
+  representation of the JWK thumbprint of the key in the sub_jwk Claim [RFC7638],
+  and sub_jwk MUST be included in the Self-Issued Response.
+* Decentralized Identifier subject syntax type: sub Claim value MUST be a DID,
+  and sub_jwk MUST NOT be included in the Self-Issued Response.
+
+## **9. Self-Issued OpenID Provider Authorization Request**
+
+* client_metadata(_uri): OPTIONAL. used to provide information about RP itself.
+  It MUST not be present if the RP uses OpenID Federation 1.0 Automatic Registration
+  to pass its metadata.
+* id_token_type: OPTIONAL. Space-separated string in order of preference to set the
+  types of ID Token the RP wants to obtain:
+  * subject_signed_id_token 
+  * attester_signed_id_token (default)
+  (RP can autodetermine the type by comparing iss == sub?
+* client_id
+* This specification allows RPs to send authorization request parameters by
+  using "request by value" and "request by reference" as defined in [RFC9101]
+  through the request parameters request or request_uri.
+* When request or request_uri parameters are NOT present and RP is NOT using
+  OpenID Federation 1.0 Automatic Registration to pass entire RP metadata,
+  client_metadata(_uri) parameters MUST be present in the request.
+* nonce:  REQUIRED
+* id_token_hint: OPTIONAL 
+* request_object_encryption_alg_values_supported: REQUIRED when requiring ID-Token
+  encryption.
+* request_object_encryption_enc_values_supported: REQUIRED " " 
+* Other parameters MAY be sent.
+* Note that all Claims are returned in the ID Token.
+* The entire URL is NOT RECOMMENDED to exceed 2048 ASCII characters.
+
+* Non-normative example HTTP 302 redirect request by the RP which triggers
+  the User Agent to make an Authorization Request to the Self-Issued OP
+  in a **same-device protocol flow**: 
+  ```
+  | HTTP/1.1 302 Found
+  | Location: siopv2://?
+  |   scope=openid
+  |   &response_type=id_token
+  |   &client_id=https%3A%2F%2Fclient.example.org%2Fcb
+  |   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+  |   &id_token_type=subject_signed_id_token
+  |   &client_metadata=%7B%22subject_syntax_types_supported%22%3A
+  |   %5B%22urn%3Aietf%3Aparams%3Aoauth%3Ajwk-thumbprint%22%5D%2C%0A%20%20%20%20
+  |   %22id_token_signed_response_alg%22%3A%22ES256%22%7D
+  |   &nonce=n-0S6_WzA2Mj
+  ```
+
+* Non-normative example of an authorization request utilizing a request_uri 
+  ```
+  HTTP/1.1 302 Found
+  Location: siopv2://?
+    client_id=https%3A%2F%2Fclient.example.org%2Fcb
+    &request_uri=https%3A%2F%2Fclient.example.org%2Frequest%2FGkurKxf5T0Y-mnPFCHqWOMiZi4VS138cQO_V7PZHAdM
+  ```
+
+## 9.1. aud of a Request Object
+* aud Claim value depends on whether the recipient of the request can
+  be identified by the RP or not:
+  * aud Claim MUST equal to the issuer Claim value, when Dynamic
+    Self-Issued OP Discovery is performed.
+  * aud Claim MUST be "https://self-issued.me/v2", when Static   [[{PM.TODO.now}]]
+    Self-Issued OP Discovery Metadata is used.
+
+## 9.2. Cross-Device Self-Issued OpenID Provider Request:
+* cross-device Authorization Request differs from same-device variant
+  as follows:
+  * response_mode (additional parameter) == **direct_post** in
+    accordance with [OAuth.Responses], is used to request the SIOP to deliver
+    the result of the authentication process to a certain endpoint using 
+    the HTTP POST method.
+  * redirect_uri is used to set the POST endpoint.
+
+non-normative example of Self-Issued Request URL in a cross-device protocol
+flow Section 4:
+
+  ```
+  siopv2://?
+    scope=openid%20profile
+    &response_type=id_token
+    &client_id=https%3A%2F%2Fclient.example.org%2Fpost_cb
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fpost_cb
+    &response_mode=post
+    &client_metadata=%7B%22subject_syntax_types_supported%22%3A
+    %5B%22urn%3Aietf%3Aparams%3Aoauth%3Ajwk-thumbprint%22%5D%2C%0A%20%20%20%20
+    %22id_token_signed_response_alg%22%3A%22ES256%22%7D
+    &nonce=n-0S6_WzA2Mj
+  ```
+
+  An RP MAY consider using a request_uri in such a case.
+
+## 10. Self-Issued OpenID Provider Authorization Response
+
+* OpenID Connect Authorization Response whose parameters depend on the
+  response_type used in the request. Depending on the response_type the
+  result of the transaction is either obtained directly from the
+  Authorization Response or from a Token Response.
+* In a same-device protocol flow with Response Type id_token, the
+  response parameters will be returned in the URL fragment component,
+  unless a different Response Mode was specified.
+* In a same-device protocol flow with Response Type code, the response
+  parameters will be returned in HTTPS POST response body of the token
+  response.
+* In a cross-device protocol flow, the Self-Issued OP directly sends
+  an HTTPS POST request with the Authorization Response to an endpoint
+  exposed by the RP.
+
+  Informative example of a SIOP Response in same-device protocol flow
+  (response_type=id_token):
+
+  ```
+  HTTP/1.1 302 Found
+  HTTP/1.1 302 Found
+  Location: https://client.example.org/cb#
+    id_token=...
+  ```
+
+  Informative example of a Self-Issued Response for authorization code flow
+  (response_type=code):
+
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Pragma: no-cache
+
+  {
+   "access_token": "SlAV32hkKG",
+   "token_type": "Bearer",
+   "expires_in": 3600,
+   "id_token": "..."
+  }
+  ```
+
+## 10.2. Cross-Device Self-Issued OpenID Provider Response
+
+  ```
+  POST /post_cb HTTP/1.1
+  Host: client.example.org
+  Content-Type: application/x-www-form-urlencoded
+
+  id_token=...
+  ```
+
+10.3. Self-Issued OpenID Provider Error Response
+
+
+  ```
+  HTTP/1.1 302 Found
+  Location: https://client.example.org/cb?
+    error=invalid_request
+    &error_description=Unsupported%20response_type%20value
+  ```
+
+11. Self-Issued ID Token
+
+iss: REQUIRED. this claim MUST be set to the value of the sub claim in the same ID Token.
+sub: REQUIRED. Subject identifier value. (JWK Thumbprint or  DID)
+sub_jwk: OPTIONAL. JSON object, pub. key used to check signature of ID Token for 
+   JWK Thumbprint. 
+
+15.1.2. A Set of Static Configuration Values bound to siopv2://
+Below is a set of static configuration values that can be used with id_token as a supported response_type, bound to a custom URL scheme siopv2:// as an authorization_endpoint:
+
+{
+  "authorization_endpoint": "siopv2:",
+  "response_types_supported": [
+    "id_token"
+  ],
+  "scopes_supported": [
+    "openid"
+  ],
+  "subject_types_supported": [
+    "pairwise"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "request_object_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "subject_syntax_types_supported": [
+    "urn:ietf:params:oauth:jwk-thumbprint"
+  ],
+  "id_token_types_supported": [
+    "subject_signed_id_token"
+  ]
+}
+
+15.1.3. A Set of Static Configuration Values bound to openid://
+
+Another set of static configuration values is used with both vp_token and id_token as supported response_type, bound to a custom URL scheme openid:// as an authorization_endpoint:
+
+{
+  "authorization_endpoint": "openid:",
+  "response_types_supported": [
+    "vp_token",
+    "id_token"
+  ],
+  "vp_formats_supported": {
+    "jwt_vp": {
+      "alg": ["ES256"]
+    },
+    "jwt_vc": {
+      "alg": ["ES256"]
+    }
+  },
+  "scopes_supported": [
+    "openid"
+  ],
+  "subject_types_supported": [
+    "pairwise"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "request_object_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "subject_syntax_types_supported": [
+    "urn:ietf:params:oauth:jwk-thumbprint"
+  ],
+  "id_token_types_supported": [
+    "subject_signed_id_token"
+  ]
+}
+
+

@@ -1,0 +1,87 @@
+# OAuth (JWT)Secured Authorization Response Mode  (JAR) [[{,security.JARM,}]]
+* REF: <https://openid.net/specs/oauth-v2-jarm.html>
+
+* JWT-based mode to encode OAuth authorization responses
+  enhancing the security with support for signing and optional
+  encryption.
+* JWT always contains:
+  * `iss`: issuer 
+  * `aud`: OAuth client_id this response is intended for.
+  * `exp`: expiration of the JWT. (10 min max is RECOMMENDED).
+  * authorization endpoint response parameters as defined for
+    the particular response types.
+    * For example Response for grant type authorization "code" 
+      requires the extra `code` and `state` claims.
+  * Error response params if appropiate:
+    error (code), error_description and  error_uri. 
+* Signing + encrypting results in a nested JWT.
+
+* Response Modes:
+  * Response Mode "query.jwt" example:
+    ```
+    HTTP/1.1 302 Found
+    Location: https://client.example.com/cb?response=eyJra... JWT token ...
+    ```
+    * WARN: "query.jwt" response mode MUST NOT be used in conjunction 
+      with response types that contain "token" or "id_token" unless
+      the response JWT is encrypted to prevent token leakage in the URL.
+  * Response Mode "query.jwt" example:
+    ```
+    HTTP/1.1 302 Found
+    Location: https://client.example.com/cb#response=eyJra... JWT token ...
+    ```
+  * Response Mode "form_post.jwt" example:
+    ```
+    | HTTP/1.1 200 OK
+    | Content-Type: text/html;charset=UTF-8
+    | Cache-Control: no-cache, no-store
+    | Pragma: no-cache
+    | 
+    | <html>
+    |  <head><title>Submit This Form</title></head>
+    |  <body onload="javascript:document.forms[0].submit()">
+    |   <form method="post" action="https://client.example.com/cb">
+    |     <input type="hidden" name="response"
+    |      value="eyJraW ... JWT token ... " />
+    |     </form>
+    |    </body>
+    |   </html>
+    | <!-- form auto-submitted in the User Agent in
+    |      "application/x-www-form-urlencoded" format like:
+    |      POST /cb HTTP/1.1
+    |      Host: client.example.org
+    |      Content-Type: application/x-www-form-urlencoded
+    |      
+    |      response=eyJraW JWT Token ...
+    ```
+
+* Response Mode "jwt" defaults to redirect default encoding:
+  query.jwt for `code` and fragment.jwt for `token` and response types
+  defined in "OAuth 2.0 Multiple Response Type Encoding Practices""
+  
+## Processing rules
+* client decrypts the JWT using the default key for the respective issuer or,
+  if applicable, determined by the kid JWT header parameter. 
+* The key might be a private key, where the corresponding public key is
+  registered with the expected issuer of the response.
+* check iss: well known, identifies the expected issuer.
+* check aud matches client id
+* checks exp 
+* check signature. 
+* check CSRF detection ... (out of scope of this specification).
+* The following client metadata parameters in the Dynamic Client
+  Registration Protocol are introduced by this specification:
+  * `authorization_signed_response_alg`: REQUIRED
+  * `authorization_encrypted_response_alg`: REQUIRED
+  * `authorization_encrypted_response_enc`: REQUIRED
+  NOTE: `jwks_uri` or `jwks metadata` parameters can be used by
+     clients to register their public encryption keys.
+
+* Authorization Server Metadata:
+  (Check original doc for more info) 
+  new params are included:
+  * `authorization_signing_alg_values_supported`    OPTIONAL
+  * `authorization_encryption_alg_values_supported` OPTIONAL
+  * `authorization_encryption_enc_values_supported` OPTIONAL
+
+* See original doc for details on Security Considerations

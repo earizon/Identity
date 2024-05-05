@@ -1,0 +1,241 @@
+# DIF PresentationExchange 2.0.0 @ma 2024-04-27
+* <https://identity.foundation/presentation-exchange/spec/v2.0.0/>
+ 
+## `presentation_definition` ((`presentation_definition_uri`) JSON Parameter
+
+* used to request the presentation of a Credential of a certain type:
+* non-normative example  (Send by Verifier to "wallet")
+  ```
+   | {
+   |    "submission_requirements": [                <·· MAY. (extension) let Verifier express what 
+   |                                                    combinations of inputs must be submitted "back"
+   |        {                                       <·· Requirement 1:  ¹ Alternative VCs
+   |                                                    (def. eval behavior: all Input Descriptors are required)
+   |            "name": "Citizenship Information",  <·· MAY
+   |            "purpose" : "..."                   <·· MAY
+   |            "rule": "pick",                     <·· MUST: := "all", "pick"
+   |            "count": 1,
+   |            "from": "A"                         <·· MUST: ("from" or "from_nested") 
+   |        }
+   |    ],
+   |      "input_descriptors": [
+   |          {
+   |              "id": "id card credential",      <·· MUST
+   |              "name": "human friendly ",       <·· MAY
+   |              "purpose": "... ",               <·· MAY
+   |              "format": {                      <·· MAY.  If present, value MUST be object with 1+
+   |                                                   properties matching the registered Claim Format 
+   |                                                   Designations (e.g., jwt, jwt_vc, jwt_vp, etc.). T
+   |                  "ldp_vc": { "proof_type": [ "Ed25519Signature2018" ] }
+   |              },
+   |              "group": [ "A" ],                <·· ¹ Alternative VCs
+   |              "constraints": {                 <·· MAY. 
+
+   |                  "limit_disclosure": "required",<·· MAY. One of 
+   |                                                     1 "required": Conformant Consumer ("wallet") MUST limit 
+   |                                                       submitted fields to those listed in the fields array
+   |                                                       (or return nothing if no disclosure is present).
+   |                                                     2 "preferred": SHOULD vs MUST (probably future "required")
+   |                                                   first "Field Query Result" found. 2+ fields allow
+   |                                                   to normalize differences (JSON-LD/JWT-based VCs vs JWTs)
+   |                        "filter": {            <·· MAY. If present value MUST be a JSON Schema descriptor ²
+   |                                                   used to filter against values returned from evaluation of
+   |                                                   the JSONPath string expressions in the path array.
+   |                          "optional": false,   <·· optional
+   |                          "type": "string",               
+   |                          "pattern": "IDCardCredential"   
+   |                        }
+   |                    },
+   |                    { "path": [ "$.credentialSubject.given_name"  ] }, ┐ , Needed to "pick"
+   |                    { "path": [ "$.credentialSubject.family_name" ] }, ├ selective disclosure.
+   |                    { "path": [ "$.credentialSubject.birthdate"   ] }  ┘
+   |                  ]
+   |          },
+   |          {
+   |              "id": "passport credential",
+   |              "format": {
+   |                  "jwt_vc_json": { "alg": [ "RS256" ] }
+   |              },
+   |              "group": [ "A" ],               <·· ¹ Alternative VCs
+   |              "constraints": {
+   |                  "fields": [
+   |                      {
+   |                          "path": [ "$.vc.type" ],
+   |                          "filter": { "type": "string", "pattern": "PassportCredential" }
+   |                      }
+   |                  ]
+   |              }
+   |          }
+   |      ]
+   |  }
+   | ²: A valid JSON Schema MAY contain additional keywords (e.g., formatMinimum, formatMaximum, ...)
+   |
+   | ¹: Optional. Needed if asking for alternative VCs  (alternative input descriptors)
+   |    A more ellaborate submission requirement could be:
+   |    {
+   |      "submission_requirements": [
+   |        {
+   |          "name": "Banking Information",
+   |          "purpose": "We need you to prove you currently hold a bank account older than 12months.",
+   |          "rule": "pick",
+   |          "count": 1,
+   |          "from": "A"
+   |        },
+   |        {
+   |          "name": "Employment Information",
+   |          "purpose": "We are only verifying one current employment relationship",
+   |          "rule": "all",
+   |          "from": "B"
+   |        },
+   |        {
+   |          "name": "Citizenship Information",
+   |          "rule": "pick",
+   |          "count": 1,
+   |          "from_nested": [
+   |            {
+   |              "name": "United States Citizenship Proofs",
+   |              "purpose": "We need you to prove your US citizenship.",
+   |              "rule": "all",
+   |              "from": "C"
+   |            },
+   |            {
+   |              "name": "European Union Citizenship Proofs",
+   |              "purpose": "We need you to prove you are a citizen of an EU member state.",
+   |              "rule": "all",
+   |              "from": "D"
+   |            }
+   |          ]
+   |        }
+   |      ]
+   |    }
+  ```
+
+* non-normative `presentation_definition_uri` value:
+  ```
+  https://verifier.net/presentationdefs?ref=idcard_presentation_request
+  ```
+
+## Presentation Request
+* A Presentation Request is any transport mechanism used to send a Presentation Definition from
+  a Verifier to a Holder (Wallet). Generally speaking all Presentation Requests needs certain
+  security properties (Signature verification, Replay protection).
+
+## Presentation Submission
+
+* Presentation Submission non-normative example:<br/>
+  NOTE: VP, OIDC, DIDComm, or CHAPI outer wrapper properties would be here.
+  ```
+  ┌···· This object will be embedded within target Claim negotiation as:
+  ·     Target     Location (as JSON Path)
+  ·     ─────────  ─────────────────────────────────
+  ·     OpenID     top-level
+  ·     DIDComms   $.presentations~attach.data.json
+  ·     VP         top-level
+  ·     CHAPI      $.data
+  v
+  {
+    "presentation_submission": {
+      "id": "a30e3b91-fb77-4d22-...",         <·· MUST
+      "definition_id": "32f54163-...",        <·· MUST
+      "descriptor_map": [                     <·· MUST
+        {         <·· Each Input Descriptor MUST only refer to a single discrete 
+                      container within a Presentation Submission, such that all
+                      checks refer to properties within the same container and 
+                      are protected by the same digital signature (if container
+                      format supports digital signatures).
+          "id": "banking_input_2",                <·· MUST
+          "format": "jwt_vc",                     <·· MUST. Value must match one of the
+                                                           Claim Format Designation.
+          "path": "$.verifiableCredential[0]"     <·· MUST. value MUST be JSONPath indicating the Claim
+                                                     submitted in relation to the identified Input Descriptor.
+        },
+        {
+          "id": "employment_input",
+          "format": "ldp_vc",
+          "path": "$.verifiableCredential[1]"
+        },
+        {
+          "id": "citizenship_input_1",
+          "format": "ldp_vc",
+          "path": "$.verifiableCredential[2]"
+          "path_nested": { ... }                 <·· MAY
+        }
+      ]
+    }
+  
+  }
+  ```
+
+
+* Predicate Feature: enable Verifier to request that Holder apply a 
+  predicate and return the result. (greater-than, less-than, not-in-set, ....)
+* Relational Constraint Feature: Extends constraints object with 
+  additional properties. (subject_is_issuer, is-holder, same-subject, ...)
+* Credential Status Constraint Feature: (active|suspended|revoked:=required|allowed|disallowed)
+* JSON-LD Framing Feature: extends Presentation Definition to support "extended" with the
+  JSON-LD document framing.
+* Retention Feature: extends Input Descriptor Object's field object to let Verifier indicate
+  it will retain the submitted value for the specific field.<br/>
+  Currently presented to support mDL systems, and may be deprecated in the future. 
+
+## Input Evaluation:
+* Conformant consumers (wallets) must filter inputs they hold (signed Claims, raw data, etc.)
+  to determine whether they possess the inputs requested by the Verifier. 
+
+Expired and Revoked Data
+
+
+* Non Normative Presentation Submission Example
+  ```
+  | {
+  |   "@context": [
+  |     "https://www.w3.org/2018/credentials/v1",
+  |     "https://identity.foundation/presentation-exchange/submission/v1"
+  |   ],
+  |   "type": [ "VerifiablePresentation", "PresentationSubmission" ],
+  |   "presentation_submission": {
+  |     "id": "a30e3b91-fb77-4d22-95fa-871689c322e2",
+  |     "definition_id": "32f54163-7166-48f1-93d8-ff217bdb0653",
+  |     "descriptor_map": [
+  |       { "id": "bank_in"    , "format": "jwt_vc", "path": "$.verifiableCredential[0]" },
+  |       { "id": "employment" , "format": "ldp_vc", "path": "$.verifiableCredential[1]" },
+  |       { "id": "citizenship", "format": "ldp_vc", "path": "$.verifiableCredential[2]" }
+  |     ]
+  |   },
+  |   "verifiableCredential": [
+  |     {
+  |       "comment": "...",
+  |       "vc": {  <·· In real apps the JWT (vs the JSON) will be sent.
+  |         "@context": "https://www.w3.org/2018/credentials/v1",
+  |         "id": ..., 
+  |         "type": ["EUDriversLicense"],
+  |         "issuer": "did:example:123",
+  |         "issuanceDate": "...",
+  |         "credentialSubject": {
+  |           "id": "did:example:ebf...",
+  |           "accounts": [
+  |             { "id": "...", "route": "DE-..." },
+  |             { "id": "...", "route": "DE-..." }
+  |           ]
+  |         }
+  |       }
+  |     },
+  |     {
+  |       "@context": "https://www.w3.org/2018/credentials/v1",
+  |       "id": "https://business-standards.org/schemas/employment-history.json",
+  |       "type": ["VerifiableCredential", "GenericEmploymentCredential"],
+  |       ...
+  |       "issuanceDate": "2010-01-01T19:73:24Z",
+  |       "credentialSubject": {
+  |         "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+  |         "active": true
+  |       },
+  |       "proof": { ... }
+  |     },
+  |     ...
+  |   ],
+  |   "proof": { ... }
+  | }
+  ```
+## External Resources:
+* See original doc for implementations of JSONPath in Node/java/Kotlin/Python/Go
