@@ -2,6 +2,7 @@ Decentrilized_Identity_foundation.txt // 71 lines
 presentation_definition.txt              // OK
 W3C_VC_v1_model.txt                      // OK
 // TODO:(0) ────────────────────────────────────────────────────────────────────
+OpenID_for_VerifiablePresentations.txt // @ma
 WiP_W3C_VC_v2_model.txt                  // 0 lines 
 W3C_VC_Implementation_Guidelines_1.0.txt // TODO:(0)
 // Concise Binary Object Representation (CBOR). C. https://www.rfc-editor.org/rfc/rfc7049 
@@ -13,8 +14,8 @@ WiP_OIDC4VC.txt                          //   4
 TODO_DIDComm.txt                         // 11 lines
 TODO_EUIDW_PID_ruleBook.txt              // 609 lines
 // FUTURE: ─────────────────────────────────────────────────────────────────────
-future_DIDRoom_eDIAS2_wallet.txt         // X-platform, multi-functional Identity/SSI wallet EUIDW
-future_W3C_VC_API.txt                    // 
+DIDRoom_eDIAS2_wallet.txt
+W3C_VC_API.txt 
 // OTROS: ─────────────────────────────────────────────────────────────────────
 // did_ethereum_implementations.txt
 // 79 WaltID_SDK.txt

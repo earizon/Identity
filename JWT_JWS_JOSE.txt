@@ -220,11 +220,113 @@
   ```
 <!-- } -->
 
-## JSON Web Key (JWK) <!-- { -->
+## JSON Web Key (JWK) [[{standards.JWK,security.secret_mng]]
+* JWKs and JWK Sets are used in the JSON Web Signature [JWS] and JSON 
+  Web Encryption [JWE] specifications.
 * REF: <https://tools.ietf.org/html/rfc7517>
-* Spec for a JSON data structure representing a cryptographic key
-  It defines also a JWK-Set JSON for set of JWKs.
-<!-- } -->
+* Spec for a JSON data structure representing a cryptographic key or 
+  cryptographic key set (JWK Set).
+* Status: Internet Standards Track document.
+* Example JWK
+  ```
+  | (values are case-sensitive)
+  | { 
+  |                        // Common key params
+  |   "kid":"...."       <·· OPT: Unique  (in-JWT Set) key ID, used to
+  |                          match a specific key, used for example in
+  |                          JWK Sets key rollovers.
+  |                          Structure is unspecified, but it is RECOMMENDED
+  |                          not to exceed 8 chars without a compelling reason.
+  |                          For  the purposes of matching "kty" values, "*"
+  |                          matches all values.
+  |                          e.g:In JWS&JWE it is used to match JWS/JWE with
+  |                          Header Parameter value.
+  |  during key rollover.  
+  |   "kty":"EC",        <·· key type: (RSA|EC|...) ¹
+  |   "use":"sig"        <·· OPT.  sig(nature) | enc(ryption), 
+
+  |   "key_ops" : [      <·· OPT., preferred to "use". 
+  |     "sign",              One or more of: ²
+  |     "deriveKey"          · "sign"      · "verify" 
+  |   ]                      · "encrypt"   · "decrypt" 
+  |                          · "wrapKey"   · "unwrapKey" 
+  |                          · "deriveKey" · "deriveBits" 
+  |                          (other values MAY be used)
+  |
+  |   "alg"             <·· OPT. Algorithm intended for use 
+  |                         with the key, with value registered
+  |                         in JWA or custom collision-resistant name.
+  |
+  |                        // Custom (EC key-type) params 
+  |   "crv":"P-256",       <·· Elliptic Curve P-256
+  |   "x":"f83OJ3D2x...",  <·· URLEncoded x coor.
+  |   "y":"x_FEzRu9m...",  <·· URLEncoded y coor.
+  |                        // Custom (RSA key-type) params 
+  |   "n": ... ,           <·· modulus
+  |   "d": ... ,           <·· private exponent
+  |   "e": ... ,           <·· exponent
+  |                            WARN: some RSA private key representations do
+  |                            not include "e" and must be avoided. Ex:
+  |                            In Java prefer RSAPrivateCrtKeySpec to
+  |                            RSAPrivateKeySpec API (missing "e")
+  |   "d":"...",           <·· ???
+  |   "p":"...",           <·· ???
+  |   "q":"....",          <·· ???
+  |   "dp":"...",          <·· ???
+  |   "dq":"...",          <·· ???
+  |   "qi":"...",          <·· ???
+  |                        // Optional X.509 related info.
+  |   "x5u"             <·· X.509 URL (TLS protected) 'pointing' to X.509
+  |                         Pub.Key Cert.(o Cert-chain)  conforming to RFC5280 
+  |                         PEM-encoded.
+  |                         Duplicated information in JWK like "use", "key_ops", 
+  |                         "alg" are still recommended for apps not handling 
+  |                         X.509 Certs. Values must be consistent in JSON a X.509
+  |   "x5c"             <·· Embedded X.509 Cert (or Cert-chain) as JSON array.
+  |   "x5t"             <·· X.509 Certificate SHA-1   Thumbprint.
+  |   "x5t#S256"        <·· X.509 Certificate SHA-256 Thumbprint.
+  | }
+  | ¹ values should either be registered in the IANA 
+  |   "JSON Web Key Types" registry established by [JWA]
+  |   or be a value that contains a Collision-Resistant Name.  
+  | ² values intentionally match "KeyUsage" those defined 
+  |   in <http://www.w3.org/TR/2014/CR-WebCryptoAPI-20141211/>.
+  | ³ "use" and "key_ops" JWK members SHOULD NOT be used together
+  |   or if forced, their values must be consistent.
+  ```
+* Example JWK Set:
+  ```
+  | {
+  |    "keys": [ JWK1 , JWK2 , ] <·· Unordered list of JWK although 
+  | }                                apps can interpret the order
+  |                                  at will
+  ```
+* Encrypted JWK/JWT Set is done through a JWE with UTF-8 encoding
+  of the JWK as its plaintext value. 
+  * example JWE JOSE Protected Header Example:
+    ```
+    | (to be encoded as BASE64URL(UTF8(JWE Protected Header))
+    | {
+    |  "alg":"PBES2-HS256+A128KW",     <·· Content Encryp.Key encrypted to 
+    |                                      recipient using PSE2-HS256+A128KW
+    |                                      algorithm (output JWE Encrypted Key)
+    |  "p2s":"2WCTcJZ1Rvd_CJuJripQ1w", <·· Salt Input 
+    |  "p2c":4096,                     <·· Iteration Count
+    |  "enc":"A128CBC-HS256",          <·· encrypt with AES_128_CBC_HMAC_SHA_256 alg.
+    |                                      HMAC => Authenticated:
+    |                                      - input:plaintext.
+    |                                      - ouput:ciphertext+Authentication Tag
+    |  "cty":"jwk+json"                <·· content type jwt+json or jwt-set+json
+    | }
+    ```
+  * JWE Compact Serialization Complete Representation:
+    ```
+    |                       ¹: BASE64URL encoded
+    |             ¹                      ¹                 ¹             ¹              ¹ 
+    | ┌───────────┴────────────┐ ┌───────┴───────┐ ┌───────┴─────┐ ┌─────┴──────┐ ┌─────┴──────┐
+    | UTF8(JWE Protected Header).JWE Encrypted Key.JWE Init Vector.JWE Ciphertext.JWE Authen.Tag
+    ```
+[[standards.JWK}]] 
 
 ## JSON Web Algorithms (JWA)  <!-- { -->
 * REF: <https://tools.ietf.org/html/rfc7518>

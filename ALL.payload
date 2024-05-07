@@ -33,7 +33,6 @@ SSI/presentation_definition.txt              // OK
 SSI/W3C_VC_v1_model.txt                      // OK
 SSI/WiP_W3C_VC_v2_model.txt                  // 0 lines 
 SSI/W3C_VC_Implementation_Guidelines_1.0.txt // TODO:(0)
-./JWT_JWS_JOSE.txt
 SSI/sd_jwt.txt                               //   2 lines
 SSI/OAuth_status_attestation.txt // 1 lines
 SSI/WiP_SIOPv2.txt                           // 427 lines
