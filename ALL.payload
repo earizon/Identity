@@ -4,12 +4,13 @@ FIDO_passwordless.txt
 // OAuth / OpenID {{{
 JWT_JWS_JOSE.txt
 OAuth_OpenIDConnect.txt
+OAuth_pushed_authorization_request.txt
 // WiP:
 WiP_RFC_9101_JWT_Secured_AuthorizationRequest.txt // TODO:(0)
 // TODO:
 lds-jws2020.txt
 OIDC_connect_registration.txt
-OAuth_pushed_authorization_request.txt
+OAuth_Rich_authorization_request.txt // For 
 OAuth_Secured_Authorization_Responde_Mode.txt
 OAuth_form_Post_Response_Mode.txt
 //   [RFC6749] Hardt, D., Ed., "The OAuth 2.0 Authorization Framework", RFC 6749, DOI 10.17487/RFC6749, October 2012, <https://www.rfc-editor.org/info/rfc6749>. 

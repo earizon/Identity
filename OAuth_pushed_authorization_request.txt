@@ -1,2 +1,91 @@
-# OAuth 2.0 Pushed Authorization Request
-* (https://oauth.net/2/pushed-authorization-requests/)
+# OAuth 2.0 Pushed Authorization Request (PAR)
+* <https://oauth.net/2/pushed-authorization-requests/>
+* <https://datatracker.ietf.org/doc/html/rfc9126>
+
+* PAR allows clients to push the payload of an OAuth 2.0 Auth Request
+  to the authorization server via a direct request and provides back
+  a request URI is used as reference to the original data.
+  (vs non-PAR enabled servers in which client's Auth.Req Params
+   are typically sent as URI query parameters via redirection in
+   the user agent).
+* Status: Internet Standards Track document.
+* Non-PAR (or Non JAR) problems include:
+  * no cryptographic integrity and authenticity protection. <br/>
+    An attacker could, for example, modify the scope of access if
+    extra care is not taken into account.<br/>
+    With PAR this is just not possible (with no extra care).
+  * No mechanism to ensure confidentiality of the request parameters. 
+  * Authorization request URLs can become quite large.
+  * NOTE: JWT-Secured Authorization Request (JAR) [RFC9101] provides 
+    solutions for the security challenges by allowing OAuth clients to 
+    wrap authorization request parameters in a signed JWT Request 
+    Object.<br/>
+    JAR introduces the `request_uri` parameter that allows clients to
+    send a reference to a Request Object instead of the Request Object
+    itself.
+* PAR complements JAR by providing an interoperable way to push the
+  payload of an authorization request directly to the 
+  authorization server in exchange for a request_uri value usable at
+  the authorization server in a subsequent authorization request.
+  Clients requiring an even higher security level are able to use
+  JWT-based Request Objects as defined by [RFC9101] in conjunction
+  with PAR.
+* PAR allows the authorization server to authenticate the client 
+  before any user interaction happens. 
+
+## Example:
+* Non PAR example:
+  ```
+  user Agent -> OAuth Server:
+  GET /authorize?response_type=code
+    &client_id=CLIENT1234&state=duk681S8n00GsJpe7n9boxdzen
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
+   Host: as.example.com
+  ```
+* PAR example:
+  ```
+  user Agent -> OAuth Server:
+    ┌──┬─·················· POST is mandatory.
+    ·  · ┌─────┬─·········· New PAR endpoint @ OP. MUST be included in 
+  > POST /as/par HTTP/1.1s  metadata endpoints.
+  > Host: as.example.com
+  > Content-Type: application/x-www-form-urlencoded
+                  └─── mandatory format ──────────┘
+                       UTF-8 encoded
+
+  > &client_id=CLIENT1234&state=duk681S8n00GsJpe7n9boxdzen
+  > &response_type=code
+  > &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+  > &scope=...
+  > &state=...
+  > &code_challenge=...&code_challenge_method=...
+  > &...=   <··· WARN: `request_uri` MUST NOT be provided.
+  > (Next params are optionally used to authenticate the client,
+  >  but will not be stored as part of the request)
+  > &client_secret=...        
+  > &client_assertion_type=
+  >  urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+  > &client_assertion=${JWK}
+
+
+  OAuth Server ->  user Agent:
+             ┌─┬─················· required for succesful response
+  < HTTP/1.1 201 Created           See original spec for error codes.
+  < Cache-Control: no-cache, no-store
+  < Content-Type: application/json
+  < 
+  < {
+  <   "expires_in": 90
+  <   "request_uri": "urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2",
+  < }                 └─────────────────┬───────────────────┘
+    ┌───────────────────────────────────┘
+    Used by client as ref like:
+    GET /authorize?client_id=CLIENT1234
+        &request_uri=urn%3Aexample%3Abwc4JK-ESC0w8acc191e-Y1LTC2 HTTP/1.1
+         └─────────┴── due to code_challenge of type nonce, it must be 
+                       used only once.
+
+    Host: as.example.com
+  ```
+* See original spec for new Authorization Server and Client Metadata
+* See original spec for Security and Privacy Considerations
