@@ -1,0 +1,6 @@
+OAuth_OpenIDConnect.txt
+OAuth_pushed_authorization_request.txt // OK
+// TODO:
+OAuth_form_Post_Response_Mode.txt // https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html
+OAuth_Rich_authorization_request.txt //  OK?
+OAuth_Secured_Authorization_Responde_Mode.txt // https://openid.net/specs/oauth-v2-jarm.html

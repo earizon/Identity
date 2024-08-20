@@ -1,0 +1,108 @@
+# W3C DIDs [[{SSI.DID.W3C,security.aaa,SSI.did]]
+
+SPEC @ <https://www.w3.org/TR/did-core/>
+* Part of the W3C technologies for Self Souveiring Identity (SSI).
+* DID stands for (D)ecentralized (ID)entifier with the identifier
+  representing a person, organization, entity, ....
+  (D)ecentralized stands "versus":
+  * centralized registries like KeyCloak, Active Directory, ...
+  * centralized identity providers like Facebook, Google, ...
+  * centralized certificate authorities. 
+* DIDs are URIs linking the DID subject to a DID document. The DID
+  document in practice will be:
+  * ✓ cryptographic material        (public keys, revoked pub.keys,...)
+  * ✓ verification methods/services (signature schemas, ...)
+  * ? other public credentials as desired by the owner/controller
+
+* Example 1: DID and associated DID-Document:
+  ```
+  | DID:
+  | 
+  |   did:ether:21tDAKCERh95uGgKbJNHYp;foo:bar=high
+  |   └───┬───┘ └───────────┬────────┘ └─── ¹ ────┘
+  |       ·     ussually public key or public key hash ("address") 
+  |       ·     associated to a user-controlled private key.               
+  |       ·     It can also be a public web domain, email, ...
+  |       ·     In practice, the public key provides a globally
+  |       ·     (Worldwide) unique ID to each user, do to modern 
+  |       ·     cryptographic collision resistant algorithms.
+  |       ·
+  |   did method: a growing number of 190+ implementations (methods) 
+  |   are currently available <https://w3c-ccg.github.io/did-method-registry/> 
+  |   [[{doc_has.report}]]
+  |
+  |   ¹: did parameters. (low ussage and adopting in practice),
+  |      Generic DID parameter names exists like version-id.
+  |   
+  | Associated non-normative "minimal" DID-Document stored in a "DID Registry"
+  | (database for DIDs like blockchains, DNS servers, ...):
+  |   
+  |   {
+  |     "@context": "https://www.w3.org/ns/did/v1",
+  |     "id": "did:ether:21tDAKCERh95uGgKbJNHYp;foo:bar=high",
+  |     "authentication": [{
+  |       "id": "did:ether:21tDAKCERh95uGgKbJNHYp#keys-1",
+  |       "type": "RsaVerificationKey2018",
+  |       "controller": "did:id_of_DID_method:DIDI_method_specific_id",
+  |       "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  |     }],
+  |     "service": [{
+  |       "id":"did:id_of_DID_method:123456789abcdefghi#vcs",
+  |       "type": "VerifiableCredentialService",
+  |       "serviceEndpoint": "https://example.com/vc/"
+  |     }]
+  |   }
+  ```
+* Example 2: Self contained DID in did:key (the DID-Document is the 
+  DID itself, widely used in SSI systems with privacy requirements).<br/>
+  REF: <https://w3c-ccg.github.io/did-method-key/>
+  ```
+  | did:key:z6MknhhUUtbXCLRmUVhYG7LPPWN4CTKWXTLsygHMD6Ah5uDN
+  |         └────────────────────────┬─────────────────────┘ 
+  |  No DID-Document registered anywhere and no DID Registry exists.
+  |  The public key contains all needed info:
+  | integrated into standard Authentication systems such as
+  |  OAuth/OpenID by setting the `JWT.iss(uer)` field to the
+  | `did:XXX:pub_key_or_address` and signing with the user-controled
+  | private-key (vs standard centralized OpenID Connect tokens
+  | signed by centralized and arbitrarely trusted Id Providers
+  | like Google/Facebook/KeyCloak/...) 
+  ```
+* A single DID document could be related to N DIDs in `1-to-N`
+  relationship allowing the same "identity" (same DID Document) be
+  represented by different implementations/methods (e.g., one on top
+  of Ethereum, another one on top of git+gpg), with the "`did:key`"
+  method being a notable exception, since the DID is the DID-document
+  on itself.
+* A DID controller refers to the subject that can prove "ownership"
+  of the DID, the only one authorized to make changes to the associated
+  DID-document (in practice through private/pub crypto signature)<br/>.
+  Authorization and Delegation of DID Document's controller is 
+  contemplated in many did methods, again with `did:key` being a notable
+  exception. (If the private key of a did:key:... is lost, the identity
+  is lost).
+* Originally designed around the idea of blockchain
+  "wallets" with the DID derived from the public key/address with the controller
+  being the private TX signature key. Other DIDs exits based for example on
+  the control of a globally unique DNS. (did:web:...). Still the original
+  idea of a private (user controlled) signature keys are the most widely
+  used ones even if no need any more for a backend blockchain exists.
+* DIDs are used as a brick component of the bigger W3C "Identity as a graph"
+  ecosystem, where graph's nodes are globally unique (D)IDs and directed
+  edges are claims that neighbors nodes make towards it:<br/>
+  ![W3C Identity ](./W3C_Identity.svg){min-width:2rem; max-width:90%}
+
+
+* Public Keys in DID documents are expressed in one of:
+  * JSON Web Key (`JWK`) format using the publicKeyJwk property
+    JWK or Privacy Enhanced Mail (PEM) encoding Base58.
+  * EdDSA(Ed25519), Secp256k1 Koblitz, Secp256r1, Curve25519("X25519"),
+    pub.key encoded as JWK or raw 32-byte Base58 Bitcoin format.
+  ```
+* WARN:  Caching and expiration of the keys in a DID document is entirely the
+  responsibility of DID resolvers and other clients.
+[[SSI.DID.W3C}]]
+
+* External Refs:
+  * Director's Decision on DID 1.0 Proposed Recommendation Formal Objections
+  <https://www.w3.org/2022/06/DIDRecommendationDecision.html>

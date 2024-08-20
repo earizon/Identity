@@ -1,0 +1,326 @@
+# OpenID for Verifiable Credential Issuance (Draft 10)
+
+* <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-11.html#name-document-history>
+
+* API that is used to issue verifiable credentials (vs id_tokens). 
+* Supported formats:
+  * W3C VC formats [VC_DATA] 
+  * ISO/IEC 18013-5 mDL [ISO.18013-5] (Appendix E)
+  * "future ones" through the use of new "Credential Format Profile".
+    ("extension point" defining parameters and claims)
+* Compared to an ID Token the VC:
+  * follows a pre-defined schema (Credential type schema)
+  * It is bound to a certain holder.
+* API Access (by wallet) is authorized using OAuth 2.0 [RFC6749].
+
+* Verifiable Credential (VC):
+
+## API for credential issuance endpoints: 
+* Mandatory Credential Endpoint from which Credentials can be issued. Sec.7.
+* Optional Batch Credential Endpoint.
+* Optional Deferred Credential Endpoint.
+* An OPTIONAL mechanism for the Credential Issuer to make
+  a Credential Offer to the Wallet to encourage the Wallet
+  to start the issuance flow.
+* A mechanism publish Issuer metadata about issuable VC.
+* Every Credential Issuer utilizes an OAuth 2.0 [RFC6749] 
+  Authorization Server to authorize access, published as 
+  Issuer's metadata.
+  * A new Grant Type "Pre-Authorized Code" along with additional
+    token response parameters authorization_pending and interval
+    is defined to facilitate flows where the preparation of the
+    credential issuance is conducted before the actual OAuth flow. 
+  * A new authorization details [I-D.ietf-oauth-rar] type
+    `openid_credential` is defined to convey the details about 
+    the Credentials (including formats and types) the Wallet wants
+    to obtain Section 5.1.1.
+  * A new OAuth 2.0 Client (wallet) metadata parameter 
+    `credential_offer_endpoint` is added to allow a Wallet
+    announce its Credential Offer Endpoint (Section 10.1.)
+  * Issuer Authorization Endpoint:
+    * An new `issuer_state` is added to convey state in the context 
+      of processing an issuer-initiated credential offer 
+      .  Section 5.1. 
+    * New `wallet_issuer` and `user_hint` enable the Issuer to request
+      VP from the calling Wallet in the course of Authorization 
+      Request processing.
+  * Token Endpoint:
+    * Optional response parameters `c_nonce` and `c_nonce_expires`_
+      are added to provide the client with a nonce to be used for
+      proof of possession of key material in following requests to
+      to the Credential Endpoint (Section 6.2.)
+
+* Issuer can fetch user information to turn into a VC using either:
+ [[{doc_has.keypoint}]]
+  1. Alt 1: user authentication and consent at the Credential Issuer's
+    (Authorization Code Flow) Authorization Endpoint.
+  2. Alt 2: using out of bound mechanisms outside of the issuance flow
+    (Pre-Authorized Code Flow).
+
+The wallet-issuer "dialog" can classified as:
+* Wallet vs Isuser initiated.
+* Same-device (Website) vs Cross-device (App)
+* Just-in-time vs Deferred.
+
+## OAuth 2.0 grant type `authorization_code` (Flow)
+
+* NOTE: other OAuth grant types (flows) can be used as well.
+* It is RECOMMENDED to use Proof Key for Code Exchange (PKCE)[RFC7636] 
+  to prevent authorization code interception attacks and Pushed 
+  Authorization Requests [RFC9126] to ensure integrity and authenticity 
+  of the authorization request.
+  ```
+  | +------+   +---------+                  +-------------------+
+  | | User |   | Wallet  |                  | Credential Issuer |
+  | +------+   +---------+                  +-------------------+
+  |   | interacts  |                                            |
+  |   |----------->|                                            |
+  |   |            |  (1) Obtains Issuer metadata               |
+  |   |            |<------------------------------------------>|
+  |   |            |                                            |
+  |   |            |  (2) Authorization Request                 |
+  |   |            |-- (VC list type(s) to be issued) --------->|
+  |   |            |                                            |
+  |   | User Authentication / Consent                           |
+  |   |            |                                            |
+  |   |            |<------ (3) Authorization Response (code) --|
+  |   |            |                                            |
+  |   |            |- (4) Token Request (code) ---------------->|
+  |   |            |<------------------------- (access_token) --|
+  |   |            |                                            |
+  |   |            |  (5) Credential Request                    |
+  |   |            |- (access_token, proof(s)) ---------------->|
+  |   |            |                                            |
+  |   |            |<---- (credential(s) OR acceptance_token) --|
+  |                                         └──────┬────────┘
+  |                                        Deferred issuance
+  |   * (2) and (3) can happens in the frontchannel through User Agent 
+  |     redirections.
+  ```
+
+## Pre-Authorized Code Flow
+
+* Using newly defined OAuth 2.0 Grant Type 
+  `urn:ietf:params:oauth:grant-type:pre-authorized_code`.
+
+  ```
+  | +------+ +-------+                          +-------------------+
+  | | User | | Wallet|                          | Credential Issuer |
+  | +------+ +-------+                          +-------------------+
+  | |          |                                                    |
+  | |          |  (1) User provides information required            |
+  | |---------------- for the issuance of a certain VC ------------>|
+  | |          |                                                    |
+  | |          |           (flow start)      (2) Credential Offer   |
+  | |          |<--------------------------- (Pre-Authorized Code) -|
+  | |          |    (Using QR/deep-link/bluethooh/... as channel    |
+  | |          |    or a Credential Offer GET Endpoint if Issuer    |
+  | |          |    is already interacting with a user that wishes  |
+  | |          |    to initate itself. )                            |
+  | |          |                                                    |
+  | |          |<-------- (3) Obtains Issuer metadata ------------->|
+  | |  Inter-  |                                                    |
+  | |-- acts ->|                                                    |
+  | |          |-(4) Token Request (Pre-Authorized Code, pin) ----->|
+  | |          |<------------------- Token Response (access_token) -|
+  | |          |                                                    |
+  | |          | (5) Credential Request (access_token, proof(s)) -->|
+  | |          |<--------------------------------- (credential(s)) -|
+  ```
+
+* No need for the Authorization Endpoint: the Wallet exchanges the Pre-Authorized
+  Code for the Access Token directly at the Token Endpoint.
+
+* In step 1, the Issuer obtains consent and user data required for 
+  the issuance of a requested VC from the End-User USING ISSUER 
+  SPECIFIC BUSINESS PROCESS. [[{doc_has.keypoint}]]
+
+## Credential Offer object: 
+* JSON object sent by value (`credential_offer`)
+  or by reference (`credential_offer_uri`) containing:
+  * credential_issuer: REQUIRED. (URL)
+  * credentials: REQUIRED. JSON array of objects or strings.
+    * objects contains data related to a certain credential type
+      the Wallet MAY request and MUST contain a format Claim 
+      determining the format of the credential to be requested 
+      and further parameters 
+    * strings values MUST be one of the id values in one of the
+      objects in the credentials_supported Credential Issuer 
+      metadata parameter. 
+  * grants: OPTIONAL. JSON object indicating to the Wallet the Grant Types
+    the Credential Issuer's AS is prepared to process.
+    ```
+    { key : Grant Type identifier, object?: parameters: ...}
+    ```
+   If not present or empty, the Wallet MUST determine the Grant Types
+   using metadata. <br/>
+   Defined grant types include:
+   * authorization_code:
+     * issuer_state: OPTIONAL. Created by Issuer, opaque to Wallet, used to 
+       bind subsequent Authorization Requests with a context.
+   * `urn:ietf:params:oauth:grant-type:pre-authorized_code`
+     * pre-authorized_code: REQUIRED. code representing the Issuer's 
+       authorization for the Wallet to obtain VC. It MUST be short lived 
+       and single-use.
+     * user_pin_required: OPTIONAL. true | false
+* Example:
+  ```
+  | URL encoded as part of credential_offer param or QR encoded, ...
+  | {
+  |    "credential_issuer": "https://credential-issuer.example.com",
+  |    "credentials": [
+  |       "UniversityDegree_JWT",
+  |       { "format": "mso_mdoc", "doctype": "org.iso.18013.5.1.mDL" }
+  |    ],
+  |    "grants": {
+  |       "authorization_code": {
+  |          "issuer_state": "eyJhbGciOiJSU0Et...FYUaBy"
+  |       },
+  |       "urn:ietf:params:oauth:grant-type:pre-authorized_code": {
+  |          "pre-authorized_code": "adhjhdjajkdkhjhdj",
+  |          "user_pin_required": true
+  |       }
+  |    }
+  | }
+  ```
+5.1. Authorization Request
+* Two ways to request issuance of a specific VC type in an Authorization Request. 
+  1. use the `authorization_details` request param. Ex:
+  ```
+  [
+     {
+        "type":"openid_credential",
+        "format":"jwt_vc_json",
+        "types":[ "VerifiableCredential", "UniversityDegreeCredential" ]
+     }
+  ]
+  ```
+  2. use scopes. The concrete scope values and the mapping between a
+  certain scope value and the credential type is out of scope of the spec.
+
+Additional and optional Request Parameters
+* wallet_issuer: OPTIONAL.
+* user_hint: 
+* issuer_state: Mandatory if present in the offer.
+
+## Dynamic Credential Request
+
+* After receiving an Authorization Request from the Client,
+  the Issuer MAY use this step to obtain additional Credentials 
+  from the End-User required to proceed with the authorization 
+  of the credential issuance.
+* It is RECOMMENDED that the Credential Issuer use [OpenID4VP] to 
+  dynamically request presentation of additional Credentials playing 
+  the role of a verifier.
+  (Details are missing in 5.1 Draft 11)
+
+* OAuth Token Request extension parameters:
+  * pre-authorized_code: CONDITIONAL.
+  * user_pin: CONDITIONAL. 
+* OAuth Successful Token Response extension parameters:
+  * c_nonce: OPTIONAL. nonce to be used to create a proof of possession
+  * c_nonce_expires_in: OPTIONAL.
+  * authorization_pending: OPTIONAL. (deferred issuance)
+  * interval: OPTIONAL. (deferred issuance pooling time)
+* Token Error Response:
+  Those defined in Section 5.2 of OAuth 2.0 [RFC6749].
+
+* Issued Credential SHOULD be cryptographically bound to the identifier of
+  the End-User who possesses the Credential. 
+
+## Credential Request Parameters
+(Section  7.2).
+* HTTP POST using "application/json" media type.
+  * format: REQUIRED. The extra parameters required by a given
+    format profile are defined in Appendix E.
+  * proof: OPTIONAL. JSON with proof of possession 
+
+  ```
+  | POST /credential HTTP/1.1
+  | Host: server.example.com
+  | Content-Type: application/json
+  | Authorization: BEARER czZCaGRSa3F0MzpnWDFmQmF0M2JW
+  | 
+  | {
+  |    "format":"jwt_vc_json",
+  |    "types":[
+  |       "VerifiableCredential",
+  |       "UniversityDegreeCredential"
+  |    ],
+  |    "proof":{ "proof_type":"jwt", "jwt":"..." }
+  | }
+* See original spec for details on JWT fields.
+
+* Example Credential Response for sync flow:
+  ```
+  
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  
+  {
+    "format": "jwt_vc_json",
+    "credential" : "LUpixVCWJk0eOt4CXQe1NXK....WZwmhmn9OQp6YxX0a2L",
+    "c_nonce": "fGFF7UkhLa",
+    "c_nonce_expires_in": 86400
+  }
+  ```
+* Example Credential Response for deferred flow:
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  
+  {
+    "acceptance_token": "8xLOxBtZp8",
+    "c_nonce": "wlbQc6pCJp",
+    "c_nonce_expires_in": 86400
+  }
+  ```
+* See original docs for Credential Error Responses.
+
+## Batch Credential Endpoint
+* Endpoint to issue multiple Credentials in one Batch Credential Response
+  as approved by the End-User upon presentation of a valid Access Token
+  representing this approval.
+* Batch Credential Request Example:
+  ```
+  | POST /batch_credential HTTP/1.1
+  | Host: server.example.com
+  | Content-Type: application/json
+  | Authorization: BEARER czZCaGRSa3F0MzpnWDFmQmF0M2JW
+  | 
+  | {
+  |    "credential_requests":[
+  |       { "format":"jwt_vc_json",
+  |          "types":[ "VerifiableCredential", "UniversityDegreeCredential" ],
+  |          "proof":{ "proof_type":"jwt", "jwt":".." }
+  |       }, {
+  |          "format":"mso_mdoc",
+  |          "doctype":"org.iso.18013.5.1.mDL",
+  |          "proof":{ "proof_type":"jwt", "jwt":"..." }
+  |       }
+  |    ]
+  | }
+  ```
+* Batch Credential Response Example:
+  ```
+  | HTTP/1.1 200 OK
+  | Content-Type: application/json
+  | Cache-Control: no-store
+  | 
+  | {
+  |   "credential_responses": [
+  |     { "format": "jwt_vc_json", "credential" : "eyJ..." },
+  |     { "acceptance_token":"8xLOxBtZp8" },
+  |     { "format": "mso_mdoc", "credential" : "YX...y" }
+  |   ],
+  |   "c_nonce": "fGFF7UkhLa",
+  |   "c_nonce_expires_in": 86400
+  | }
+  ```
+* NOTE: The Batch Credential Request either successfully issues all requested credentials
+  or fails entirely if there is even one credential failed to be issued. [[{doc_has.keypoint}]]
+
+
+

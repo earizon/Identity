@@ -1,0 +1,75 @@
+# OpenID for Verifiable Credential Issuance
+
+* Lead by the OpenID Global Assured Identity Network (GAIN) "Consortium" <https://openid.net/cg/gain-poc/>.
+  This network includes:
+  * Cloud Signature Consortium,  committed to driving standardization of highly secure and compliant digital signatures in the cloud.
+  * Global Legal Entity Identifier Foundation:  enables people and 
+    businesses to make smarter, less costly, and more reliable decisions 
+    about whom to do business with through its Global Legal Entity 
+    Identifier (LEI) System and partner network.
+  * The Institute of International Finance: supporting the global 
+    financial industry, has pursued the Open Digital Trust Initiative 
+    with OIDF with the aim of creating a vibrant marketplace for Digital 
+    Trust Services to confirm identities and manage risk.
+  * Open Identity Exchange: Identity community that seeks to develop 
+    the guidance and tools required to enable every individual to have a 
+    trusted, universally accepted identity.
+
+* Current Draft <https://openid.github.io/OpenID4VCI/openid-4-verifiable-credential-issuance-wg-draft.html> <br/>
+(newer than last published draft, automatically published from <https://www.github.com/openid/OpenID4VCI/>).
+* Last Published Draft: <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html>
+* Draft @v10: <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-10.html>
+
+* See also related specs at <https://openid.net/sg/openid4vc/specifications/>:
+  * OID4VP
+  * SIOPv2
+  * OID4VP-over-Bluethooth,
+  * OID-Connect UserInfo VC, OpenID4VC High Assurance Interoperability Profile with SD-JWT VC)
+
+
+  ```
+    Access Token Issuance
+    Issuer to wallet CREDENTIAL OFFER  
+                                           RAR Object         Scope
+    Pre-Auth.Code      Issuer State           ·                 ·
+          ·                 ·                 v                 ·
+          ·                 └─···············>o<·················
+          ·                       ┌───────────┴───────────┐
+          ·                        Authorization Endpoint
+          ·                                   ·
+          ·                                   v
+          ·                          Authorization Code (to wallet)
+          ·                                   ·
+          ·                                   ·
+          ···········>o<·······················
+             ┌────────┴────────┐
+              token endpoint      
+                      · 
+                      v 
+                Access Token (to wallet)
+                      · 
+                      · ──────────────────────────────────────────────────────────
+                      ···········>o             Alt. 1 Sync. Issuance
+                      ·      ┌────┴─────┐
+                      ·       Credential 
+                      ·       EndPoint    ····> VC
+                      · ──────────────────────────────────────────────────────────
+                      ·
+                      ···········>o             Alt. 2 Deferred Issuance
+                      ·      ┌────┴─────┐
+                      ·       Credential  ····> Transaction ID ······>o
+                      ·       EndPoint                           ┌────┴─────┐
+                      ·                                           Deferred
+                      ·                                           Credential 
+                      ·                                           EndPoint    ····> VC
+                      · ──────────────────────────────────────────────────────────
+                      ···········>o             Alt. 3          
+                             ┌────┴─────┐
+                              Batch     ····> VC list             (sync)
+                              Credential····> Transaction ID list (deferred)
+                              EndPoint
+
+  ```
+
+# See also:
+* OIDC4VCI by Authlete: <https://www.authlete.com/developers/oid4vci/> ("Takahiko Kawasaki")

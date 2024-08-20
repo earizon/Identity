@@ -1,0 +1,194 @@
+## Internet Identity Workshop. Digital Credential API  [[{eIDAS,standars]]
+significant progress on many core challenges faced by eIDAS wallet ecosystem.
+* Agreements on integration of OpenID4VP within the Digital Credential API 
+  aka Browser API:
+  * Apple and Google presented a Demo/PoC together for cross-device flows
+    using CTAP 2.2 Hybrid protocol. (Client to Authenticator Protocol). 
+    This would finally enable secure cross-device presentation that has not
+    been possible so far and it even could work cross-platform.
+* Reworking of the OpenID4VCI Batch Credential Endpoint.
+  * Great consensus on the further developments around the Credential Query and
+    how to improve Presentation Exchange and integrating credential format 
+    specific parameters 
+* I initiated work with Mirko Mollik to evaluate and compare the 
+  revocation and status mechanisms currently in discussion.
+* OpenID Digital Credential Protocols(DCP) working group had a successful
+  hybrid meeting on Friday, gaining consensus on many outstanding questions
+  regarding OpenID4VCI and OpenID4VP Thanks to Google and Apple team for 
+  participating and working together with us on these important topics
+[[eIDAS}]]
+
+# Identity: German Wallet Architecture Concepts/proposals [[{eIDAS]]
+* <https://gitlab.opencode.de/bmi/eudi-wallet/eidas-2.0-architekturkonzept>
+(by Paul Bastian)
+* Released second version of the architecture proposal for the EUDI wallet in 
+  the German Consultation Process led by BMI and SPRIND - Bundesagentur für
+  Sprunginnovationen.
+* The updated version contains:
+  * reorganized section for PID Options, adding two new HSM-based variations.
+  * extended privacy and security considerations and applied them as evaluation criteria.
+  * added new chapter on Operating Model.
+  * added new sections on batch-issuance, revocation, wallet attestations.
+* WARN: We are far from finished and important topics are still lie ahead of us.
+[[}]]
+
+## vc-bitstring-status-list [[{vc.revocation,privacy]]
+* https://github.com/w3c/vc-bitstring-status-list
+Spec. describign a privacy-preserving, space-efficient, and 
+high-performance mechanism for publishing the status information 
+associated with Verifiable Credentials.
+[[}]]
+## Identity: DIF Presentation Exchange
+* <https://identity.foundation/presentation-exchange/spec/v2.0.0/>
+
+## Lissi GmbH EUDI-Wallet Connector! [[{eIDAS.EUDIW]]
+* <https://www.linkedin.com/posts/lissi_identity-authentication-eudiwallets-activity-7176525173691420672-tYAy> 
+
+* Alternative 1. No connector: Each company implements the latest
+  technical standards itself, which must be compatible with all
+  EUDI-Wallets in the 27 member states, and which have to be updated
+  regularly to meet the requirements of the Architecture Reference 
+  Framework.
+* Alternative 2: Use an "EUDI-Wallet Connector Software" with 
+  common and stable API interfaces.
+
+* WARN:
+  *  Reply by Martin Kuppinger: "#EUDIWallets will speak special 
+  protocols that are very complex."
+  """ Fear, uncertainty and doubt never get old!Forgive my wallet
+  pessimism, the is an inordinate amount of talent focused on 
+  something that is very simple. All complexity feeds into the hands of 
+  the super-aggregators, which shrinks the market and ultimately limits 
+  diversity. 
+  * Yann B. @IDAKTO: 
+  """ I am curious to know where the 16+ months estimate comes from.
+  In our programs some relying parties have needed only 48hrs to
+  integrate the national digital ID.Yes it is only on credential and
+  one protocol however we have to remember that the 
+wallet aims to provide a lot of things but that the aim is for each 
+relying party to get only the minimum it needs.There is still a lot 
+to define on the #EUDI wallet but assuming that in the end it will 
+require 16+months for a relying party to integrate the elements it 
+needs is assuming that the EUDI wallet will fail
+[[}]]
+
+
+## Verified.Me (Fabric) [[{stack.fabric,blockchain,TODO]]
+- Verified.Me, by SecureKey Technologies Inc., is the new and secure
+  way to help you verify your identity, so you can quickly get access
+  to the services and products you want online, in person and on the
+  phone.
+
+- Verifying your identity can be an inconvenient task. Waiting in
+  long lineups to show several pieces of ID and answering multiple
+  security questions are just a few of the hassles that come with
+  verifying your identity to get access to the services and products
+  you want.
+
+- Verified.Me offers a secure and convenient way to help Canadians verify their identities.
+
+- Verified.Me is a service offered by SecureKey Technologies Inc. The
+  Verified.Me service was developed in cooperation with seven of
+  Canada’s major financial institutions – BMO, CIBC, Desjardins,
+  National Bank of Canada, RBC, Scotiabank and TD. The Verified.Me
+  network continues to evolve, with plans of adding new identity
+  providers and service providers to make your life easier.
+[[}]]
+
+## Microsoft u-Prove: [[{SSI,]]
+* <https://en.wikipedia.org/wiki/U-Prove>
+* <https://www.microsoft.com/en-us/research/project/u-prove/>
+
+* Technology for user-centric identity management. The
+  underlying cryptographic protocols were designed by Dr. Stefan Brands and
+  further developed by Credentica and, subsequently, Microsoft.[1] U-Prove
+  enables application developers to reconcile seemingly conflicting security
+  and privacy objectives (including anonymity), and allows for digital identity
+  claims to be efficiently tied to the use of tamper-resistant devices such as
+  smart cards. Application areas of particular interest include cross-domain
+  enterprise identity and access management, e-government SSO and data sharing,
+  electronic health records, anonymous electronic voting, policy-based digital
+  rights management, social networking data portability, and electronic payments.
+[[}]]
+
+## Decentralized PKI [[{]]
+* 2015 paper describing DPKI, co-authored by  Vitalik Buterin(Ethereum),
+  Christopher Allen (SSL 1.0), and Jon Callas (PGP and Silent Circle).
+
+* Control over the identifier is returned to the principal [owner].
+* No longer is it trivial for any one entity to undermine the security
+  of the entire system or to compromise an identifier that is not theirs.
+  This is how DPKI is able to address both the security and usability
+  problems that plague DNS and PKI.
+  https://github.com/WebOfTrustInfo/rwot1-sf/blob/master/final-documents/dpki.pdf
+[[}]]
+
+## https://www.shyft.network/
+   The Shyft Network is a public protocol designed to validate
+  identity and power compliance directly into blockchain data. By
+  facilitating the transfer of verifiable data between centralized and
+  decentralized ecosystems, Shyft Network delivers meaningful user
+  information that institutions can utilize to secure cryptocurrency
+  while maintaining privacy.
+
+## consensys ethense [[{ethereum]]
+- by consensys academy.
+- platform for issuing, sharing, and verifying credentials. academy
+  successfully deployed ethense in the fall of 2017 to issue certificates to
+  the graduates of its first developer program. ethense gives individuals
+  ownership of their certifications and keeps degree validation quick, easy,
+  and secure.
+  http://blockchainers.org/index.php/2016/10/28/ethereum-usecase-identity-management-part-2/
+[[}]]
+
+## AI + SSI [[{use_case.identity,w3c_did]]
+* Leveraging AI to Create Value from Self-Sovereign Identity (SSI)
+  Hosted by the AI & Machine Learning Special Interest Group
+  Wednesday, August 19, 11:00 AM -12:00 PM ET
+  Thomas Behe and Neil Stansbury will discuss using A.I. intelligent
+  agents in combination with real-time personal data updates and novel
+  trust verification methods to leverage data insights for consensual
+  marketing purposes.
+  They will explore how using distributed graph technology can address
+  blockchain scalability, cost, and speed limitations. Aspects of their
+  approach include using one million graph vaults for one million
+  customers \u2013 not one database or ledger block holding a million
+  customer records.
+
+  Highlights include:
+
+  - Solving DLT privacy challenges for blockchain companies needing to
+    securely store and manage personal data.
+  - How identity sharing solutions can offer new consented-for
+    marketing opportunities, while retaining personal privacy rights for
+    citizens.
+  - How persona-centric intelligent agents can work to benefit both
+    citizens and businesses.
+
+  Who-is-who:
+  - Thomas Behe is the CEO, co-founder of Octopus.sh, a product
+    innovator, entrepreneur, and published author of TJ's semi-fictional
+    graphic novel that predicted society's serious data privacy issues we
+    now see a decade after its publication. He has launched identity
+    solutions for Experian, Barclays, Sky and iTV, his case studies
+    taught at Harvard, Ivey, and Copenhagen business schools and has been
+    published in Wired, HDVideoPro, and the FT.
+  - Neil Stansbury is the co-founder and head of engineering at
+    Octopus.sh. Originally trained as an aircraft engineer, he is a
+    20-year software engineering veteran, having re-trained during the
+    dot com boom. As an expert on web technologies, he built the first
+    WebRTC video app for Google Chromecast and the original ITV Player
+    (still the UK's 2nd most-watched TV app). His innovative
+    VaultChain federated architecture addresses fundamental data
+    ownership, socialization, and Personal privacy issues limiting
+    blockchain technology.
+[[}]]
+
+# Veramo.io [[{]]
+* WARN: NodeJS based
+* Performant and modular APIs for Verifiable Data and SSI
+* Create and manage decentralized identifiers + verifiable
+  credentials without worrying about interop and vendor lock-in.
+[[}]]
+
+

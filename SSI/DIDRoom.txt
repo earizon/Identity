@@ -1,0 +1,58 @@
+[[{stack.didroom,standards.web,eidas2,vc.w3c,vc.sd-jwt,]]
+# DIDroom W3c and eIDAS 2.0 Compliant Wallet
+<https://forkbomb.solutions/solution/didroom/>
+* Open-source, Multi-platform, multi-functional Identity/SSI wallet
+* compliant with:
+  * W3C-DID
+  * W3C-VC standards
+  * eIDAS 2.0 (based on the EUDI-ARF specifications).
+* Advanced cryptographic and blockchain functions, including
+  * signatures
+  * multi-signatures
+  * blockchain interoperability (for Ethereum, Bitcoin, Hyperledger Fabric and Sawtooth, and Planetmint)
+* Supports broad rage of standards:
+  * SD-JWT, mDOC: supports the eIDAS 2.0 (EUDI-ARF)
+  * WC-DID, WC-VC: supports the industrial standards W3C-DID and W3-VC.
+  * OpenIDVCI and OpenID Federation: supports the protocols used by the 
+    Italian EUDIW developers
+  * Zero knowledge proof: supports issue and verifications of zero 
+    knowledge proof credentials using the BBS+ and Coconut cryptographic 
+    flows.
+* Microservice based issuing and verification:
+  * admin dashboard allows you to plug external microservices for issuance
+    and verification including the Authorization Server, Credential Issuer
+    and Relying party.
+  * The external service can be based on Zenswarm, so each service has its
+    own DID/Identity and its issuance/verification flows are programmable 
+    in Zencode, or be based on a 3rd party’s technology.
+* Trusted Execution Environment (TEE): the mobile applications 
+  (holder wallet and verifier app) support TEE for Android and iOS,
+  as required by the EUDI-ARF specs.
+* Granular ACL: admin dashboard enables the admin to assign multiple roles
+  to different users, allowing them to setup issueing and verification 
+  services with different capabilities
+* Multiplatform easy to mantain mobile app: 
+  * mobile app, used both for holder and verifier roles, is based on
+   Capacitor, uses minimal platform specific code (e.g. for Trusted Execution Environment).
+   Blockchain interoperability: using Zenroom’s interop capabilities,
+    DIDroom can perform signatures and verification on EVM blockchains.
+
+* heavily oriented towards microservices and focused on interoperability.
+
+ The components used are:
+    Credential issueing and verification: performed by independent microservices, each having its own identity (W3C-DID and OpenID Federation) based on Zenswarm
+    * Authorization server
+    * Credential issuer
+    * Relying party
+  * Web based solution: based on Signroom and Starters, implemented in Go and Typescript, containing
+    Web-based GUI to setup organizations, users, issueing and verification flows.
+  * Admin-dashboard (Pocketbase), offers infrastructure and microservices setup, functionalities 
+    and appearance adjustment.
+  * Database: GDPR compliante, uses LiteFS for scalability and redundance
+      Mobile applications: built on CapacitorJS, support Truststed 
+    Execution Environment (TEE) Android an iOS, rely on Zenroom and its 
+    stack for cryptography and core business logic, Support SD-JWT and 
+    mDOC.
+  * Holder Wallet: can request, store and present an SD-JWT (PID, QEEA or EEA)
+  * Verifier app: manages a verification flow
+[[stack.didroom}]]

@@ -1,0 +1,14 @@
+# OAuth 2.0 Rich Authorization Requests (RAR) 
+
+* Extracted from Pushed Auth. Request (PAR) article.
+  " New specifications have been being developed for new use cases and 
+   demands. Some of such specifications make authorization requests 
+   bigger. 
+   ... OAuth 2.0 Rich Authorization Requests” (RAR) has added a new
+   request parameter, authorization_details, which has a complex JSON 
+   structure ...
+   ... OpenID Connect for Identity Assurance 1.0” (IDA) (my article:
+   “Identity Assurance — OpenID Connect in the eKYC era”
+   <https://darutk.medium.com/identity-assurance-openid-connect-in-the-ekyc-era-3be78384a1d1>)
+   has inserted verified_claims which also has a complex JSON structure into the 
+   value of the claims request parameter (OIDC Core 1.0, Section 5.5).

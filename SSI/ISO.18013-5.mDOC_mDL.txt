@@ -1,0 +1,245 @@
+# ISO 18013-5 mobile Driving Licence (mdoc/mDL)  
+
+## Credential Format Profile ("extension points") for mDL when used in OIDC4VCI:
+* https://w3c-ccg.github.io/vdl-vocab/ [[{PM.TODO}]]
+
+* Online CBOR decoder: <https://cbor.zone/>
+
+* Summary extracted from Apendix E.2 at 
+  <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-11.html#name-document-history>
+
+* Format Identifier used in OIDC4VCI: `mso_mdoc`
+* Additional Credential Issuer Metadata defined for this Credential format:
+
+* doctype: REQUIRED. string identifying the credential type.
+* claims: OPTIONAL. JSON object containing key/value list, where:
+  * the key is a given namespace as defined in [ISO.18013-5] (or any profile of it),
+    and the value is a JSON object  or ...
+  * the key is a claim that is defined in the respective namespace and 
+    is offered in the Credential and The value is a JSON object detailing
+    the specifics of the claim with a following non-exhaustive list of
+    parameters that MAY be included:
+    * mandatory: OPTIONAL. true => claim MUST be present.
+    * value_type: OPTIONAL. := string, number, image/jpeg , ...
+    * display: OPTIONAL.
+    * name: OPTIONAL. 
+    * locale: OPTIONAL.
+* order: OPTIONAL. An array of claims.display.name values that lists 
+* Example:
+  ```
+  | credentials_supported={
+  |   "format": "mso_mdoc",
+  |   "doctype": "org.iso.18013.5.1.mDL",
+  |   "cryptographic_binding_methods_supported": [ "mso" ],
+  |   "cryptographic_suites_supported": [ "ES256", "ES384", "ES512" ],
+  |   "display": [ { ... }, ... ]
+  |   "claims": {
+  |     "org.iso.18013.5.1": {
+  |       "given_name": { "display": [ { ... }, ... ] },
+  |       "last_name": { "display": [ { ... }, ... ] },
+  |       "birth_date": {}
+  |     },
+  |     "org.iso.18013.5.1.aamva": { "organ_donor": {} }
+  |   }
+  | }
+  ```
+* Additional claims defined for the Credential format.
+  * doctype: REQUIRED. string.
+  ```
+  | {
+  |   "credential_issuer": "https://credential-issuer.example.com",
+  |   "credentials": [
+  |     {
+  |       "format": "mso_mdoc",
+  |       "doctype": "org.iso.18013.5.1.mDL"
+  |     }
+  |   ],
+  |   "grants": {
+  |     "urn:ietf:params:oauth:grant-type:pre-authorized_code": {
+  |       "pre-authorized_code": "adhjhdjajkdkhjhdj",
+  |       "user_pin_required": true
+  |     }
+  |   }
+  | }
+  ```
+* additional claims are defined for authorization details of type 
+  openid_credential and this Credential format.
+  * doctype: REQUIRED. JSON string as defined in Appendix E.2.2
+  * claims: OPTIONAL. A JSON object as defined in Appendix E.2.2
+  ```
+  | [
+  |     {
+  |         "type": "openid_credential",
+  |         "format": "mso_doc",
+  |         "doctype": "org.iso.18013.5.1.mDL",
+  |         "claims": {
+  |             "org.iso.18013.5.1": {
+  |                 "given_name": {},
+  |                 "last_name": {},
+  |                 "birth_date": {}
+  |             },
+  |             "org.iso.18013.5.1.aamva": {
+  |                 "organ_donor": {}
+  |             }
+  |         }
+  |     }
+  | ]
+  ```
+* additional parameters defined for Credential Requests and this Credential format.
+* doctype: REQUIRED.
+* claims: OPTIONAL. 
+
+
+## identity-credential Implementation @ openwallet-foundation-labs [[{EUIDW.openwallet]]
+* <https://github.com/openwallet-foundation-labs/identity-credential>
+* libraries and applications for working with Real-World Identity.
+* initial focus: mdoc/mDL according -ISO/IEC 18013-5:2021- and 
+  related standards (mainly ISO 23220 series and ISO 18013-7) 
+* Planned for future credential formats.
+* Kotlin based, currently (2024-06) targeting JVM, planning for Kotlin Multiplatform.
+
+* General Modules:
+  * identity: core building blocks -mobile and server-.
+  * identity-mdoc: data structures and routines for working with mdoc credentials.
+  * identity-sdjwt provides data structures and routines for working with IETF SD-JWT credentials. 
+  * identity-android: Android-specific extensions. taking advantage of Android-specific features
+    including hardware-backed Keystore, NFC, Bluetooth Low Energy, and so on.
+  * identity-android-legacy: older version of the APIs.
+  * identity-doctypes: contains known credential document types:
+    * ISO/IEC 18013-5:2021 mDL
+    * EU PID
+    along with human-readable descriptions of claims / data elements and also sample data
+
+### `identityctl`: Command-line tool
+* Can be used to generate ISO/IEC 18013-5:2021 IACA test certificates among other things.
+
+### Android apps: 
+* AppHolder application: simple self-contained application using four different mdoc Document Types:
+  * org.iso.18013.5.1.mDL: Mobile Driving License
+  * org.micov.1: mdoc for eHealth
+  * nl.rdw.mekb.1: mdoc for Vehicle Registration
+  * eu.europa.ec.eudiw.pid.1: mdoc for Personal Identification
+  * app flavors: wallet, purse
+* wallet module:
+  rewrite of appholder reference application with an eye towards a production-quality and 
+  easily rebrandable identity wallet application. [[{PM.low_code}]]
+
+* identity-issuance module: server-based credential issuance. 
+  It defines server(runnable servlet) and client interfaces as 
+  well as provides the implementation for them. 
+
+### Sample Applications
+* preconsent-mdl - Simple mDL application without user consent authentication.
+* age-verifier-mdl - a simple mDL reader for age attestations.
+* simple-verifier - a simple mDL reader for age attestations.
+
+### ISO 18013-7 Reader Website
+* contains source code for a website acting as an mdoc reader.
+[[EUIDW.openwallet}]]
+
+## Issuing VC in SD-JWT VC&mdoc/mDL formats, 
+
+* mandated in eIDAS 2.0
+* <https://darutk.medium.com/oid4vci-demo-87a232cfcc2a>
+* NOTE: Due to the high frequency of changes in the OID4VCI 
+  specification, the version published on openid.net may not be 
+  suitable as reference documents for implementers. Implementers are 
+  advised to refer to the working group draft that automatically 
+  follows the updates in the main branch of the openid/OpenID4VCI 
+  repository.
+
+### Example mDoc/mDL:
+
+  ```
+  binary mDoc/mDL base64 encoded:               txt "decoded":
+  omdkb2NUeXBldW9yZy5pc28uMTgwMTMuNS4xLm1E      {
+  TGxpc3N1ZXJTaWduZWSiam5hbWVTcGFjZXOhcW9y        "docType": "org.iso.18013.5.1.mDL",
+  Zy5pc28uMTgwMTMuNS4xiNgYWFukaGRpZ2VzdElE        "issuerSigned": {
+  AWZyYW5kb21QcbnmTIHt0_17t-AcHkKZbHFlbGVt          "nameSpaces": {
+  ZW50SWRlbnRpZmllcmppc3N1ZV9kYXRlbGVsZW1l            "org.iso.18013.5.1": [
+  bnRWYWx1ZdkD7GoyMDI0LTAxLTEy2BhYXKRoZGln              24(<< {
+  ZXN0SUQCZnJhbmRvbVBRwvzBVJYBc2plhd7vXZwT                  "digestID": 1,
+  cWVsZW1lbnRJZGVudGlmaWVya2V4cGlyeV9kYXRl                  "random": h'71b9e64c81edd3fd7bb7e01c1e42996c',
+  bGVsZW1lbnRWYWx1ZdkD7GoyMDI1LTAxLTEy2BhY                  "elementIdentifier": "issue_date",
+  WqRoZGlnZXN0SUQDZnJhbmRvbVDcuBh2xE6SqxDD                  "elementValue": 1004("2024-01-12")
+  ECOY9H3CcWVsZW1lbnRJZGVudGlmaWVya2ZhbWls                } >>),
+  eV9uYW1lbGVsZW1lbnRWYWx1ZWtTaWx2ZXJzdG9u              24(<< {
+  ZdgYWFKkaGRpZ2VzdElEBGZyYW5kb21QHu5Fe96g                  "digestID": 2,
+  JQH-NeOAvSuJdHFlbGVtZW50SWRlbnRpZmllcmpn                  "random": h'51c2fcc1549601736a6585deef5d9c13',
+  aXZlbl9uYW1lbGVsZW1lbnRWYWx1ZWRJbmdh2BhY                  "elementIdentifier": "expiry_date",
+  W6RoZGlnZXN0SUQFZnJhbmRvbVDI-4b03R-29ljF                  "elementValue": 1004("2025-01-12")
+  hUoZMHP0cWVsZW1lbnRJZGVudGlmaWVyamJpcnRo                } >>),
+  X2RhdGVsZWxlbWVudFZhbHVl2QPsajE5OTEtMTEt              24(<< {
+  MDbYGFhVpGhkaWdlc3RJRAZmcmFuZG9tUCJlXpl0                  "digestID": 3,
+  UAxhiiN9BwSnLeBxZWxlbWVudElkZW50aWZpZXJv                  "random": h'dcb81876c44e92ab10c3102398f47dc2',
+  aXNzdWluZ19jb3VudHJ5bGVsZW1lbnRWYWx1ZWJV                  "elementIdentifier": "family_name",
+  U9gYWFukaGRpZ2VzdElEB2ZyYW5kb21QbWz_ggUx                  "elementValue": "Silverstone"
+  ytSax7_FqCzoEHFlbGVtZW50SWRlbnRpZmllcm9k                } >>),
+  b2N1bWVudF9udW1iZXJsZWxlbWVudFZhbHVlaDEy              24(<< {
+  MzQ1Njc42BhYoqRoZGlnZXN0SUQIZnJhbmRvbVBb                  "digestID": 4,
+  SwOg91lMspu_ctBa2uqgcWVsZW1lbnRJZGVudGlm                  "random": h'1eee457bdea02501fe35e380bd2b8974',
+  aWVycmRyaXZpbmdfcHJpdmlsZWdlc2xlbGVtZW50                  "elementIdentifier": "given_name",
+  VmFsdWWBo3V2ZWhpY2xlX2NhdGVnb3J5X2NvZGVh                  "elementValue": "Inga"
+  QWppc3N1ZV9kYXRl2QPsajIwMjMtMDEtMDFrZXhw                } >>),
+  aXJ5X2RhdGXZA-xqMjA0My0wMS0wMWppc3N1ZXJB              24(<< {
+  dXRohEOhASahGCFZAWEwggFdMIIBBKADAgECAgYB                  "digestID": 5,
+  jJHZwhkwCgYIKoZIzj0EAwIwNjE0MDIGA1UEAwwr                  "random": h'c8fb86f4dd1fb6f658c5854a193073f4',
+  SjFGd0pQODdDNi1RTl9XU0lPbUpBUWM2bjVDUV9i                  "elementIdentifier": "birth_date",
+  WmRhRko1R0RuVzFSazAeFw0yMzEyMjIxNDA2NTZa                  "elementValue": 1004("1991-11-06")
+  Fw0yNDEwMTcxNDA2NTZaMDYxNDAyBgNVBAMMK0ox                } >>),
+  RndKUDg3QzYtUU5fV1NJT21KQVFjNm41Q1FfYlpk              24(<< {
+  YUZKNUdEblcxUmswWTATBgcqhkjOPQIBBggqhkjO                  "digestID": 6,
+  PQMBBwNCAAQCilV5ugmlhHJzDVgqSRE5d8KkoQqX                  "random": h'22655e9974500c618a237d0704a72de0',
+  1jVg8WE4aPjFODZQ66fFPFIhWRP3ioVUi67WGQSg                  "elementIdentifier": "issuing_country",
+  TY3F6Vmjf7JMVQ4MMAoGCCqGSM49BAMCA0cAMEQC                  "elementValue": "US"
+  IGcWNJwFy8RGV4uMwK7k1vEkqQ2xr-BCGRdN8OZu                } >>),
+  r5PeAiBVrNuxV1C9mCW5z2clhDFaXNdP2Lp_7CBQ              24(<< {
+  rHQoJhuPcNgYWQHopWd2ZXJzaW9uYzEuMG9kaWdl                  "digestID": 7,
+  c3RBbGdvcml0aG1nU0hBLTI1Nmx2YWx1ZURpZ2Vz                  "random": h'6d6cff820531cad49ac7bfc5a82ce810',
+  dHOhcW9yZy5pc28uMTgwMTMuNS4xqAFYIKuS8FCe                  "elementIdentifier": "document_number",
+  CcvDMwZgEezuuVv-DYsUpdypJp9abJrqHAmXAlgg                  "elementValue": "12345678"
+  u7D-3vr-NrLg3zigunUzEKFqYAyG5sA-ffvmDjRx                } >>),
+  Z24DWCC2OBnhoZFhqE7s8PRfdej8t5frp-HgF_2X              24(<< {
+  4qMtzvEY6ARYIBF_rl93VR21umkIdSMiWqFmT5Jx                  "digestID": 8,
+  s0n3H5SWonWrJoDrBVggKDvVyMU358Le0n6TkVb2                  "random": h'5b4b03a0f7594cb29bbf72d05adaeaa0',
+  c0BbhbSMJwpswtPLNiZrTR8GWCAFZzJwAmnC7QcM                  "elementIdentifier": "driving_privileges",
+  Qwq72FDQlmPxk0434cZbh6_rt1VagQdYIHwBHQ3-                  "elementValue": [
+  sVPtco-RcUhuYYq6iivujjYyJmQBbQ_OdhFDCFgg                    {
+  cjT2HYgkoxnwWP-9jqO_6-D-d69H9UW2xjpDWrkn                      "vehicle_category_code": "A",
+  lvBnZG9jVHlwZXVvcmcuaXNvLjE4MDEzLjUuMS5t                      "issue_date": 1004("2023-01-01"),
+  RExsdmFsaWRpdHlJbmZvo2ZzaWduZWTAdDIwMjQt                      "expiry_date": 1004("2043-01-01")
+  MDEtMTJUMDA6MTA6MDVaaXZhbGlkRnJvbcB0MjAy                    }
+  NC0wMS0xMlQwMDoxMDowNVpqdmFsaWRVbnRpbMB0                  ]
+  MjAyNS0wMS0xMlQwMDoxMDowNVpYQHFzEb09NFyF                } >>)
+  lj533FE_1B9I2rku90K52ar64Id1CyOUXWXzhINe            ]
+  VfoJU1cfxgCT2CX1369cGd_TQxSjhVx8bpY               },
+  ```                                               "issuerAuth": [ h'a10126',
+                                                      {
+                                                        33: h'3082015d30820104a0030201020206018c91d9c219300a06082a8648ce3d04030230363134303206035504030c2b4a3146774a50383743362d514e5f5753494f6d4a415163366e3543515f625a6461464a3547446e5731526b301e170d3233313232323134303635365a170d3234313031373134303635365a30363134303206035504030c2b4a3146774a50383743362d514e5f5753494f6d4a415163366e3543515f625a6461464a3547446e5731526b3059301306072a8648ce3d020106082a8648ce3d03010703420004028a5579ba09a58472730d582a49113977c2a4a10a97d63560f1613868f8c5383650eba7c53c52215913f78a85548baed61904a04d8dc5e959a37fb24c550e0c300a06082a8648ce3d040302034700304402206716349c05cbc446578b8cc0aee4d6f124a90db1afe04219174df0e66eaf93de022055acdbb15750bd9825b9cf672584315a5cd74fd8ba7fec2050ac7428261b8f70'
+                                                      },
+                                                      24(<< {
+                                                          "version": "1.0",
+                                                          "digestAlgorithm": "SHA-256",
+                                                          "valueDigests": {
+                                                            "org.iso.18013.5.1": {
+                                                              1: h'ab92f0509e09cbc333066011eceeb95bfe0d8b14a5dca9269f5a6c9aea1c0997',
+                                                              2: h'bbb0fedefafe36b2e0df38a0ba753310a16a600c86e6c03e7dfbe60e3471676e',
+                                                              3: h'b63819e1a19161a84eecf0f45f75e8fcb797eba7e1e017fd97e2a32dcef118e8',
+                                                              4: h'117fae5f77551db5ba69087523225aa1664f9271b349f71f9496a275ab2680eb',
+                                                              5: h'283bd5c8c537e7c2ded27e939156f673405b85b48c270a6cc2d3cb36266b4d1f',
+                                                              6: h'056732700269c2ed070c430abbd850d09663f1934e37e1c65b87afebb7555a81',
+                                                              7: h'7c011d0dfeb153ed728f9171486e618aba8a2bee8e36322664016d0fce761143',
+                                                              8: h'7234f61d8824a319f058ffbd8ea3bfebe0fe77af47f545b6c63a435ab92796f0'
+                                                            }
+                                                          },
+                                                          "docType": "org.iso.18013.5.1.mDL",
+                                                          "validityInfo": {
+                                                            "signed": 0("2024-01-12T00:10:05Z"),
+                                                            "validFrom": 0("2024-01-12T00:10:05Z"),
+                                                            "validUntil": 0("2025-01-12T00:10:05Z")
+                                                          }
+                                                        } >>),
+                                                      h'717311bd3d345c85963e77dc513fd41f48dab92ef742b9d9aafae087750b23945d65f384835e55fa0953571fc60093d825f5dfaf5c19dfd34314a3855c7c6e96'
+                                                    ]
+                                                  }
+                                                }

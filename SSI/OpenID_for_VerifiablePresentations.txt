@@ -1,0 +1,337 @@
+# OpenID for Verifiable Presentations [[{protocol.OpenID.OIDC4VP]]
+[[use_case.authentication]]
+  ```
+  | Draft 20: (29 November 2023 )
+  | <https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html>
+  | <https://github.com/openid/OpenID4VP>
+  | Draft 21: (9 May 2024 )
+  | https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html#name-document-history
+  ```
+
+* enables presentation of VCs as Verifiable Presentations on any format 
+  (W3C VCs Data Model, ISO mdoc, and AnonCreds [Hyperledger.Indy], ...)
+* Built on top of OAuth 2.0, reusing:
+  * reuse pre-existing OAuth 2.0 Grant Types (token, code, ...)
+  * reuse pre-existing Response mode: 
+    * #fragment : Redirect with in URI framents   - with vp_token in Authorization (Header?).
+    * ?query    : Redirect with in URI query param- with vp_token in Authorization (Header?).
+    * In that case the new `Authentication Request.response_mode` is also
+      used.  (Otherwise the default #fragment or ?query is used according 
+      to the default used in the grant-type).
+    * Also used to request signing or signing+encrypting. 
+* New `Authentication Request` response types defined in spec: 
+  * `vp_token` and  `vp_token id_token`: (request VPs 
+    in Authorization Responses (standalone or along with a Self-Issued
+    ID Token [SIOPv2]):
+    * A VP Token contains 1+ single Verifiable Presentations in one or
+      different formats.
+* OIDCVP contemplate also cross-device scenarios:
+  ```
+  |      ORIGIN                                         DESTINATION
+  |      OAuth Client ··> OAuth Auth.Request(_uri)¹···> Web browser   
+  |      (Verifier)       (HTTP 302 Redirect)           └────┬────┘
+  |                       #fragment | ?query                 ·
+  |                     · presentation_definition(_uri)      ·
+  |                         (JSON or JWT(optionally encoded) ·
+  |                     · nonce                              ·
+  |                     · scope (optional, mapping by wallet ·
+  |                       to a certain Presentation Definition
+  |                        is out-of-scope in spec           ·
+  |                     · client_id                          ·
+  |                     · client_id_scheme ³                 ·
+  |                     · client_metadata(_uri): Opt. JSON   ·
+  |                     · response_mode: Optional.           ·
+  |                       `direct_post` + request_uri        ·
+  |                       RECOMMENDED for x-device. ⁷        ·
+  |                       def value: default for grant-type  ·
+  |                        (?query | fragment )              ·
+  |                        Same used for "OKs" and errors.   ·
+  |                     · response_type ⁴ ⁶                  ·
+  |                     · aud ⁵                              ·
+  |                                                          ·
+  |  ┌······················································─┘
+  |  ·                                                 
+  |  └·> Web Browser  ··> QR Code ··················>·· Mobile App.
+  |                      (Tipically Auth.Req.URI)       ·         ·                  
+  |                                                     ·         ·                  
+  |  ┌··················································┴─────────┘
+  |  ·                                                 
+  |  └·> Mobile App.² ··> OAuth Auth.Response ⁶ ·······> OAuth Client
+  |                     Form POST                      
+  | 
+  |  Authentication Request travels across devices (Brower -> Mobile)
+  |  and the Response is "POSTED" from the destination device.
+  |
+  |  ¹ Verifier sends either the  Authorization Request Object or 
+  |    a reference as defined in JWT-Secured Authorization Request 
+  |    (JAR) [RFC9101]. !!!!
+  |    Non normative Authorization Request URI (that can be displayed
+  |    to the End-User either directly (as a link) or as a QR Code:
+  |    
+  |    https://wallet.example.com?
+  |        client_id=https%3A%2F%2Fclient.example.org%2Fcb
+  |        &request_uri=https%3A%2F%2Fclient.example.org%2F567545564
+  |
+  |  ² Wallet processes the Auth. Request against existing VCs 
+  |    and confirms presentation with final user that will pick what
+  |    to present. Wallet is also in charge of authenticating the 
+  |    End-User (fingerprint, key-pass, ...).
+  |
+  |  ³ How the client id must be checked by wallet (DNS, did, ...)
+  |    Depending on Scheme, the Client can also attach a JSON with
+  |    its client_metadata(_uri) as defined in Sec. 4.3&2.1 of OpenID 
+  |    Connect Dynamic Client Registration 1.0. 
+  |
+  |  ⁴ respone_type==vp_token => a successful response MUST include
+  |    the vp_token param. and not SHOULD NOT return an OAuth 2.0
+  |    Authorization Code, Access Token, or Access Token Type.
+  |    vp_token => signature and optional encryption.
+  |    The default Response Mode for this Response Type is #fragment
+  |    with `Authorization Response` parameters encoded in 
+  |    #fragment added to the redirect_uri  (@Verifier)
+  |    
+  |  ⁵ `aud` value depends on whether recipient can be identified by
+  |     the Verifier or not:
+  |     Dynamic Discovery is performed => aud==issuer Claim value
+  |     Static Discovery metadata used => aud==https://self-issued.me/v2 
+  | 
+  |  ⁶ VP Token can be returned in Authorization Response or Token Response 
+  |   depending on the Response Type used.
+  |   *    response_type == vp_token          => VP Token returned in Authorization Response 
+  |   *    response_type == vp_token id_token => VP Token returned in Authorization Response
+  |      && scope contains openid                alongside a Self-Issued ID Token 
+  |   * Response Type value ==  code          => VP Token returned in Token Response
+  | 
+  |   When VP Token is returned, the OAuth Authen. response MUST include 
+  |   the following REQUIRED parameters:
+  |   * `vp_token`: JSON Object with
+  |     alt 1.   Verifiable Presentation
+  |     alt 2.  [Verifiable Presentation list]  (as JSON Array)
+  |   * `presentation_submission`: mappings between requested VCs and where to
+  |      find them in returned VP Token.<br/>
+  |      (See original doc for details)
+  |      Other presentation_submission inside the VP Token must be ignored by
+  |       Clients, since it must be processed in advance to the VP Token.
+  |
+  |  ⁷ `response_mode=direct_post`. New in spec. POST to URL@Verifiers
+  |    `response_mode=direct_post.jwt` => User jARM in Response 
+  direct_post.
+  |    It also fix issues with big vp_tokens.
+  |    Authorization Response params. encoded in body using
+  |    `application/x-www-form-urlencoded` content type. 
+  |    The flow can ends after the POST, or continue if 
+  |    if Verifier responds to POST with a redirect URI.
+  |    * The new Authorization Request parameter is defined to be 
+  |      used in conjunction with Response Mode direct_post:
+  |      * `response_uri`: "CONDITIONAL". MUST be present in `direct_post`
+  |        indicating where to POST the response.
+  |      * `redirect_uri` MUST NOT be present in this case!!!
+  |        Otherwise, wallets MUST return invalid_request Authorization Response error.
+  |        If client_id_scheme == redirect_uri, client_id must be the response_uri
+  | 
+  |  ⁸ Verifier has the choice of the following mechanisms to invoke a Wallet:
+  |    * Custom URL scheme as an authorization_endpoint (ex: openid4vp:// )
+  |    * Domain-bound Universal Links/App link as an authorization_endpoint.
+  |    * no specific authorization_endpoint.
+  |    * user scanning a QR code with Authorization Request using a manually opened Wallet,
+  ```
+## non-normative OIDC4VP OAuth Request extension examples: 
+* Ex/Alt 1: Non-JWT-Secured Authorization Request (JAR):
+  ```
+  GET /authz?
+    response_type=vp_token
+    &client_id=https%3A%2F%2Fclient.example.org%2Fcb
+    &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+    &presentation_definition=...
+    &nonce=n-0S6_WzA2Mj HTTP/1.1
+  ```
+* Ex/Alt 2. JWT-Secured Authorization Request (JAR) + request 
+  ```
+  | HTTP 302
+  | Location: /authz?
+  |           client_id=s6BhdRkqt3
+  |          &request=eyJhbG..AlMGzw HTTP/1.1
+  | Host: a.b.com
+  ```
+* Ex/Alt 3. JWT-Secured Authorization Request (JAR) + request _uri
+  ```
+  | HTTP 302
+  | Location: /authz?client_id=s6BhdRkqt3&
+  |           request_uri=https%3A%2F%2Fa.b.com%2F... HTTP/1.1
+  | Host: server.example.com
+  ```
+## 5.1. presentation_definition(_uri) Parameter:
+  (See original doc, Sec. 5.1 for examples of presentation_definition) 
+
+
+* Wallet metadata.vp_formats_supported: VC and VP formats supported by Wallet
+  (SIOP Wallet do not annuence anything?).
+* Verifier metadata: Section 9.1
+  * Client metadata defined in Section 2 of [RFC7591] is used plus ...
+  * `vp_formats`: formats supported. Wallet MUST ignore formats inside
+                Presentation_definition not included in vp_formats
+                See Apendix A in spec for specific values that can be returned.
+  * `client_id_scheme`: mechanisms use to obtain and validate metadata
+    of the Verifier beyond the scope of [RFC6749]. Defined values include: 
+    * pre-registered: default behavior. Client Identifier needs to be known
+      to the Wallet in advance of the Authorization Request.
+    * redirect_uri: client id value == redirect_uri. Auth.Request MUST NOT be signed.
+    * entity_id: Client Id is an Entity Identifier defined in OpenID Federation. 
+    * did: Client Id is a DID => Request MUST be signed with Controller Key of DID.
+      * NOTE: `kid` must be used to select one public key when DID-Document has N 
+        valid ones.
+* non-normative example of a JWT for a signed Auth.Request with 
+  client_identifier_scheme == did
+  ```
+  | // HEADER:
+  | { "typ": "oauth-authz-req+jwt", "alg": "RS256", "kid": "did:example:123#1" }
+  | // BODY:
+  | {
+  |   "client_id": "did:example:123",
+  |   "client_id_scheme": "did",
+  |   "response_types": "vp_token",
+  |   "redirect_uri": "https://client.example.org/callback",
+  |   "nonce":"n-0S6_WzA2Mj",
+  |   "presentation_definition": "...",
+  |   "client_metadata": {                        <·· Do not include if dynamic registracion has been done
+  |     "vp_formats": {
+  |       "jwt_vp": { "alg": [ "EdDSA", "ES256K" ] },
+  |       "ldp_vp": { "proof_type": [ "Ed25519Signature2018" ] }
+  |     }
+  |   }
+  | }
+  ```
+  * `verifier_attestation`: allows to authenticate the Verifier against JWTs bound to
+    a certain Pub.key.
+  * `x509_san_dns`: Client Identifier type == DNS name. 
+  * `x509_san_uri`: Client Identifier type == URI. 
+
+## Authentication Response ("VP Token").
+
+* non-normative example of an Authorization Response for
+  `Authorization Request.Response Type == vp_token`
+  ```
+  | HTTP/1.1 302 Found
+  | Location: https://client.example.org/cb#
+  |   presentation_submission=...
+  |   &vp_token=...
+  ```
+* See original doc for examples of VP Tokens with 1 or N VP.
+
+* non-normative example of Authorization Response sent via HTTPS POST request 
+  to the Verifier's Response Endpoint:
+  ```
+  | POST /post HTTP/1.1
+  |   Host: client.example.org
+  |   Content-Type: application/x-www-form-urlencoded
+  |
+  |   presentation_submission=...&
+  |   vp_token=...&
+  |   state=eyJhb...6-sVA
+  ```
+* non-normative example of response using presentation_submission and vp_token
+  values.  (OAuth 2 JARM using JWT)
+  ```
+  | POST /post HTTP/1.1
+  |   Host: client.example.org
+  |   Content-Type: application/x-www-form-urlencoded
+  |
+  |   response=eyJra...9t2LQ
+  | ┌─········─┴───────────┘ 
+  | non-normative example of signed JWT payload               non-normative example of signed JWT payload
+  |                                                           encrypted and not signed.
+  | (before base64url encoding+signing)                        (before base64url encoding+signing)
+  | {                                                         {
+  |   "iss": "did:example:ebfeb1f712ebc6f1c276e12ec21",       
+  |   "aud": "https://client.example.org/cb",                 
+  |   "exp": 1573029723,                                      
+  |   "vp_token": "eyJhb...YMetA",                              "vp_token": "eyJhb...YMetA",
+  |   "presentation_submission": {                              "presentation_submission": {
+  |     "definition_id": "example_jwt_vc",                        "definition_id": "example_jwt_vc",
+  |     "id": "example_jwt_vc_presentation_submission",           "id": "example_jwt_vc_presentation_submission",
+  |     "descriptor_map": [                                       "descriptor_map": [
+  |       {                                                         {
+  |         "id": "id_credential",                                    "id": "id_credential",
+  |         "path": "$",                                              "path": "$",
+  |         "format": "jwt_vp",                                       "format": "jwt_vp",
+  |         "path_nested": {                                          "path_nested": {
+  |           "path": "$.vp.verifiableCredential[0]",                   "path": "$.vp.verifiableCredential[0]",
+  |           "format": "jwt_vc"                                        "format": "jwt_vc"
+  |         }                                                         }
+  |       }                                                         }
+  |     ]                                                         ]
+  |   }                                                         }
+  | }                                                         }
+  ```
+* Non normative response to POST using the new in spec `redirect_uri` (optional) parameter:
+  (if not present the flow is finished and wallet is free to change the UI at will).
+  ```
+  HTTP/1.1 200 OK
+  Content-Type: application/json;charset=UTF-8
+  Cache-Control: no-store
+
+  {
+    "redirect_uri":"https://client.example.org/cb#response_code=091535f699ea575c7937fa5f0f454aee"
+  }
+  ```
+  * When redirect_uri is present the Wallet MUST send the User Agent to the destination.
+    as to allow the Verifier to continue the interaction with the End-User.
+    (It especially enables the Verifier to prevent session fixation attacks)
+  
+
+## Signed and Encrypted Responses
+  (Sec 6.3 in spec)
+* Auth request.respone_type == "vp_token" ||  "vp_token id_token"
+* Implementations MAY use JWT OAuth 2.0 Secured Authorization Response Mode (JARM).
+  (in a "symmetric" way to how JWT Authentication Request JAR can be used for requests)
+* NOTE: Encrypting but not signing the Auth. Response prevents the signing key from
+  being used as a correlation factor. 
+* See original doc (Sec 6.3) for remarks on JWT encrypted (JWE) but not signed.
+* key material used for encryption and signing SHOULD be determined using existing
+  metadata mechanisms.
+  To obtain Verifier's public key for the input to the key agreement to encrypt the
+  Authorization Response, the Wallet MUST use jwks(_jwks_uri) claim within the
+  client_metadata request parameter, or within the metadata defined in the Entity
+  Configuration when [OpenID.Federation] is used, or other mechanisms.
+* To sign the Authorization Response, the Wallet MUST use a private 
+  key that corresponds to a public key made available in its metadata.
+* See section 6.4 in spec for details on possible Error Responses codes returned by the wallet
+* See section 6.5 in spec. for VP Token Validation details.
+* See section   8 in spec for Wallet (Authorization Server) Metadata details.
+* Section 10, Verifier Attestation JWT, especially designed to allow a
+  Wallet to authenticate a Verifier in a secure and flexible manner. 
+  (See original spec).
+  Q: What is the relation to  client_id_scheme [[{PM.TODO}]] 
+* See Sect 11 in spec for details Implementation Considerations
+  * non-normative example of a set of static configuration values that
+    can be used with vp_token parameter as a supported Response Type,
+    bound to a custom URL scheme openid4vp:// as an Authorization Endpoint:
+    ```
+    | {
+    |   "authorization_endpoint": "openid4vp:",
+    |   "response_types_supported": [ "vp_token" ],
+    |   "vp_formats_supported": {
+    |     "jwt_vp_json": { "alg_values_supported": ["ES256"] },
+    |     "jwt_vc_json": { "alg_values_supported": ["ES256"] }
+    |   },
+    |   "request_object_signing_alg_values_supported": [ "ES256" ]
+    | }
+    ```
+   * Sect. 11.2. Support for Federations/Trust Schemes
+   * 11.3. Nested Verifiable Presentations
+   * 11.4. State Management
+   * 11.5. Response Mode direct_post
+* See 12. in spec Security Considerations details:
+* See Appendix A in spec for Examples with Credentials in Various Formats
+  ```
+  | A.1. W3C Verifiable Credentials
+  | A.1.1. VC signed as a JWT, not using JSON-LD
+  | A.1.2. LDP VCs, Example Credential Presentation Request & Response
+  | A.2. AnonCreds (Hyperledger Indy)
+  | A.3. ISO mobile Driving License (mDL) !!!
+  | A.3.1. Presentation Request
+  | A.3.2. Presentation Response
+  | A.4. Combining this specification with SIOPv2 [[{PM.TODO}]]
+  ```
+[[protocol.OpenID.OIDC4VP}]]
+

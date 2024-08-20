@@ -1,0 +1,22 @@
+[[{security.aaa,code.low_code,data_management.rdf,standards.web,protocol.solid,use_case.identity.ssi,02_doc_has.comparative,01_PM.BACKLOG]]
+# Solid (decentrilized) Protocol 
+<https://solidproject.org/for-developers/>
+* Standard proposed by Teem Berners Lee (Web inventor).
+* Solid is an extension (vs replacement) of current Webs,
+  working on any modern browser.
+* The objective is to centralize all "scattered data" around
+  on the Internet like Social Networks, Online-Shops (Amazon,...),
+  digital services  (online banks, ...) and keep that data under
+  the control on final users (vs Facebook, Google, Amazon,...).
+  User's "Pods" are in charge of storing all our personal data:
+  Pods can be self-hosted or provided by Pod's service provider.
+* Compares to W3C DID/VC. WebID is the equivalent to W3C DID.    [comparative]
+  As with DIDs, different WebID's can be owned by the same person,
+  e.g., one WebID issued by governments, another self-issued WebID for
+  personal uses, ...
+* "Vocabularies" help to interpret Pod's data to any independent
+  service/application/company that has been granted access.
+* Helps to build application decoupled from data , avoiding to   [low-code]
+  maintain a separate back-end.
+* Data is requested directly to users (vs provider's custom API).
+[[}]]

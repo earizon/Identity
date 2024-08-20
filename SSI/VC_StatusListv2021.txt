@@ -1,0 +1,123 @@
+# VC StatusList v2021 (VC Revocation)
+
+* REFS:
+  * <https://www.w3.org/TR/2023/WD-vc-status-list-20230427/>
+  * Latest published version: <https://www.w3.org/TR/vc-status-list/>
+  * Latest editor's draft: <https://w3c.github.io/vc-status-list-2021/>
+  * History: <https://www.w3.org/standards/history/vc-status-list >
+  * Authors: Digital Bazaar, Transmute, mesur, Mavennet
+  * Status: **EXPERIMENTAL and DEPRECATED** 
+
+* privacy-preserving, space-efficient, and "high-performance" mechanism for publishing
+  status information such as SUSPENSION or REVOCATION of Verifiable Credentials.
+
+* Concern 1: Avoid one-to-one mapping between a VC and related status URLs to avoid
+  the issuer to correlated the holder on "GET" requests.
+* Concern 2: Performance, bandwidth,  processing perspective.
+
+* goals: Create VC status for up to 100,000 VCs:
+  ```
+    SIZE:
+  * ~12,500 bytes. for worst case
+  * ~500 bytes     for N hundred VC revoked credentials.
+  ```
+
+* Status information for all VC issued (by a single issuer) are expressed as
+  bit list ("bit string" in the spec) (WARN: vs bit) values.  
+  ```
+   ┌─·· Position zero is left most placed in the string.
+   v    (See Section 5.1 Bitstring Encoding, in original spec)
+   011001............ <··· 1 bit per issued VC, 
+                           Minimum Size: 16kbytes/131,072 entries
+                           1: revoked, 0: non revoked
+  ```
+  * highly compressible data format since most chars will be "0".
+
+
+verifiable data registry
+    A role a system might perform by mediating the creation and verification of identifiers, keys, and other relevant data, such as verifiable credential schemas, revocation registries, issuer public keys, and so on, which might be required to use verifiable credentials. Some configurations might require correlatable identifiers for subjects. Some registries, such as ones for UUIDs and public keys, might just act as namespaces for identifiers. 
+
+
+
+## Data Model
+
+* StatusList2021Entry (embedded in any VC.credentialStatus)
+  ```
+  |   id: ...
+  |  iss: ...
+  |  sbj: ...
+  |  ...
+  |  credentialStatus : StatusList2021Entry instance
+  |  ┌─────────────────┬┴──────────────────────────┘ 
+  |
+  |  Example: 
+  |  {
+  |    "@context": [
+  |      "https://www.w3.org/2018/credentials/v1",
+  |      "https://w3id.org/vc/status-list/2021/v1"
+  |    ],
+  |    "id": "https://example.com/credentials/23894672394",
+  |    "type": ["VerifiableCredential"],
+  |    "issuer": "did:example:12345",
+  |    "issued": "2021-04-05T14:27:42Z",
+  |    "credentialStatus": {
+  |                        "id": "https://a.com/VC/status/3#945"  ¹
+  |                      "type": "StatusList2021Entry",           ²
+  |             "statusPurpose": "revocation",                    ³
+  |           "statusListIndex": "94567",                         ⁵
+  |      "statusListCredential": "https://a.com/VC/status/3"      ⁶
+  |    },
+  |    "credentialSubject": {
+  |      "id": "did:example:6789",
+  |      "type": "Person"
+  |    },
+  |    "proof": { ... }
+  |  }
+  |
+  |  ¹ URL identifying the status info. associated with this VC instance
+  |    It MUST NOT be the URL for the status list.
+  |  ² Always "StatusList2021Entry" 
+  |  ³ one of "revocation",  "suspension", ... others....
+  |  ⁵ Int >= 0, expressed as string with the position of the VC in the StatusList
+  |  ⁶ URL to a StatusList2021Credential VC.  When dereferenced, it must result in
+  |    a VC.type that MUST include "StatusList2021Credential"
+  ```
+* VC StatusList2021Credential
+  * VC encapsulating the Status List.
+  * Instead of being stored in a wallet, it is published "somewhere"
+    (to a shared Trusted Registry by N verifiers, for example)
+  * StatusList2021Credential format
+    ```
+    | {
+    |  "@context": [
+    |    "https://www.w3.org/2018/credentials/v1",
+    |    "https://w3id.org/vc/status-list/2021/v1"
+    |  ],
+    |  "id": "https://a.com/VC/status/3",                      ¹
+    |  "type": ["VerifiableCredential",  
+    |           "StatusList2021Credential"],                   ²
+    |  "validFrom"  : (Optional: Part of VerifiableCredential)
+    |  "validUntil" : (Optional: Part of VerifiableCredential) ³ 
+    |  "issuer": "did:example:12345",
+    |  "issued": "2021-04-05T14:27:40Z",
+    |  "credentialSubject": {
+    |    "id": "https://example.com/status/3#list",
+    |    "type": "StatusList2021",                             ⁴
+    |    "statusPurpose": "revocation",                        ⁵
+    |    "encodedList": "H4sIAAAAAAAAA-3BMQEAAADCoPVPbQwfo..." ⁶
+    |  },
+    |  "proof": { ... }
+    |} 
+    |
+    | ¹ MAY. It MUST match the value specified in statusListCredential for 
+    |   the corresponding StatusList2021Entry.
+    | ² "StatusList2021Credential" is mandatory.
+    | ³ Verifiers SHOULD cache the status list VC until this time.
+    |   Issuers, Public Registires are expected to align HTTP Cache-Control header 
+    |   with this date.
+    | ⁴ MUST be StatusList2021.
+    | ⁵ revocation (non reversible), suspension (reversible)
+    | ⁶ base64(GZIP(VC status bitstring)). 
+    ```
+* Check original spec for the validation implementation (in verifiers).
+* The use of content distribution networks is allowed and encouraged.
