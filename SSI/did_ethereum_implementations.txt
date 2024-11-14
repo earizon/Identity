@@ -1,0 +1,103 @@
+# DID Ethereum Implementations
+[[{stack.ethereum.ERC725,02_use_case.identity,standards.W3C_DID,01_PM.TODO]]
+# ERC-725: DID Lightweight Identity 
+<https://erc725alliance.org/>
+- Note: Current Identity Systems in Ethereum include
+  (ref: https://w3c-ccg.github.io/did-method-registry/#the-registry)
+  · did:erc725:    PROVISIONAL  Ethereum    Markus Sabadello,
+                                            Fabian Vogelsteller
+                                            Peter Kolarov
+  · did:uport:     DEPRECATED   Ethereum    uPort
+  · did:ethr:      PROVISIONAL  Ethereum    uPort
+  · did:dom:       PROVISIONAL  Ethereum    Dominode
+  · did:jolo:      PROVISIONAL  Ethereum    Jolocom
+  · did:selfkey:   PROVISIONAL  Ethereum    SelfKey
+  · did:pistis:    PROVISIONAL  Ethereum    Andrea Taglia
+                                            Matteo Sinico
+  · did:vaultie:   PROVISIONAL  Ethereum    Vaultie Inc.
+  · did:gatc:      PROVISIONAL  Ethereum,   Gataca
+                                Fabric,
+                                Alastria
+  · did:signor:    PROVISIONAL  Ethereum
+                                Hashgraph   Cryptonics  Signor DID Method
+- What is ERC 725?
+  Proposed standard for self-sovereign identity (superseeded by EIP 1056?)
+  - Identity is described by a proxy-SC that can be controlled by
+    multiple keys and other smart contracts describing humans,
+    groups, objects and machines.
+  - ERC 735: associated standard to add|remove claims to an ERC-725 SC.
+[[stack.ethereum.ERC725}]]
+
+[[{stack.ethereum.EIP1056,use_case.identity,standards.W3C_DID,01_PM.TODO]]
+# EIP 1056: Lightweight Identity 
+ -  WARN: Unstable, likely to change.
+  """ ...As we have been developing identity systems for the last couple of
+  years at uPort it has become apparent that the cost of identity
+  creation is a large issue. The previous Identity proposal ERC-725
+  faces this exact issue. Our requirements when creating this ERC is
+  that identity creation should be free, and should be possible to do
+  in an offline environment (e.g. refugee scenario). However it must
+  also be possible to rotate keys without changing the primary
+  identifier of the identity. The identity system should be fit to use
+  off-chain as well as on-chain..."""
+[[stack.ethereum.EIP1056}]]
+
+
+
+
+
+# ERC 780: Ethereum Claims Registry [[{02_use_case.identity,01_PM.backlog]]"
+- proposal to allows persons, smart contracts, and machines to issue
+  claims about each other, as well as self issued claims with the aim
+  of providing a central point of reference for on-chain claims on
+  Ethereum.
+[[}]]
+
+# EIP-1484: Digital Identity Aggregator [[{01_PM.backlog]]
+  Identity management and aggregation framework.
+  - Identities are represented via a singular Identity Registry SC.
+    that can be associated to Ethereum addresses in a variety of
+    meaningful ways.
+  - Enables arbitrarily complex identity-related functionality.
+  - They can natively support ERC-725 and ERC-1056 identities,
+    and can be fully powered by meta-transactions.
+[[}]]
+
+# EthrDIDs"uPort++" [[{02_use_case.identity,standards.W3C_DID,architecture,01_PM.radar]]
+<https://medium.com/uport/goodbye-uport-dids-hello-ethr-dids-ea2e80256f54>
+<https://github.com/uport-project/ethr-did-registry>
+- Goodbye uPort DIDs, Hello Ethr-DIDs
+  We have released a major app update that enables migrating all old uPort
+  identities created before September 2018, to the current DID architecture.
+  Not to worry though, your old Identity data will still be available to use
+  and all verifications issued will be available
+[[}]]
+
+# Scalability of Verifiable Claims registry using The Graph Protocol [[{scalability,]]
+By Kebin Thizy <https://medium.com/@thizy.kevin>
+- GitHub repo: <https://github.com/investorid/subgraph-experiment>
+
+  Example reference Smart Contract storing Identity claims
+  Ex:
+  claim type 1: id-holder is French   , attested/signed by issuer_i1
+  claim type 2: holder is over 18     , attested/signed by issuer_i1
+  claim type 3: has not bank debts    , attested/signed by issuer_i2
+  claim type 3: ...                   , attested/signed by issuer_i3
+  ...
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  For each contract instance, for each claim type,
+  fetch all claims attested/signed by same issuer_iN
+
+  └ Without Graphs:
+    for contract in identityContractInstances:     ←   A loop for each instance
+       for claim_type in type1 type2 ...:          ←   A loop for each type
+           fetch claims where issuer = issuer_iN
+  └ With GraphQL and the Graph protocol:
+  -  A single GraphQL query suffices .
+[[}]]
+
+# Alastria Identity  [[{ethereum,alastria,w3c_did,TODO]]
+<https://github.com/alastria/alastria-identity>
+[[}]]
+
+

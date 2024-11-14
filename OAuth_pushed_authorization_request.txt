@@ -4,7 +4,7 @@
 
 * PAR allows clients to push the payload of an OAuth 2.0 Auth Request
   to the authorization server via a direct request and provides back
-  a request URI is used as reference to the original data.
+  a request URI used as reference to the original data.
   (vs non-PAR enabled servers in which client's Auth.Req Params
    are typically sent as URI query parameters via redirection in
    the user agent).
@@ -44,48 +44,47 @@
   ```
 * PAR example:
   ```
-  user Agent -> OAuth Server:
-    ┌──┬─·················· POST is mandatory.
-    ·  · ┌─────┬─·········· New PAR endpoint @ OP. MUST be included in 
-  > POST /as/par HTTP/1.1s  metadata endpoints.
-  > Host: as.example.com
-  > Content-Type: application/x-www-form-urlencoded
-                  └─── mandatory format ──────────┘
-                       UTF-8 encoded
-
-  > &client_id=CLIENT1234&state=duk681S8n00GsJpe7n9boxdzen
-  > &response_type=code
-  > &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
-  > &scope=...
-  > &state=...
-  > &code_challenge=...&code_challenge_method=...
-  > &...=   <··· WARN: `request_uri` MUST NOT be provided.
-  > (Next params are optionally used to authenticate the client,
-  >  but will not be stored as part of the request)
-  > &client_secret=...        
-  > &client_assertion_type=
-  >  urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
-  > &client_assertion=${JWK}
-
-
-  OAuth Server ->  user Agent:
-             ┌─┬─················· required for succesful response
-  < HTTP/1.1 201 Created           See original spec for error codes.
-  < Cache-Control: no-cache, no-store
-  < Content-Type: application/json
-  < 
-  < {
-  <   "expires_in": 90
-  <   "request_uri": "urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2",
-  < }                 └─────────────────┬───────────────────┘
-    ┌───────────────────────────────────┘
-    Used by client as ref like:
-    GET /authorize?client_id=CLIENT1234
-        &request_uri=urn%3Aexample%3Abwc4JK-ESC0w8acc191e-Y1LTC2 HTTP/1.1
-         └─────────┴── due to code_challenge of type nonce, it must be 
-                       used only once.
-
-    Host: as.example.com
+  | user Agent -> OAuth Server:
+  |   ┌──┬─·················· POST is mandatory.
+  |   ·  · ┌─────┬─·········· New PAR endpoint @ OP. MUST be included in 
+  | > POST /as/par HTTP/1.1s  metadata endpoints.
+  | > Host: as.example.com
+  | > Content-Type: application/x-www-form-urlencoded
+  |                 └─── mandatory format ──────────┘
+  |                      UTF-8 encoded
+  |
+  | > &client_id=CLIENT1234&state=duk681S8n00GsJpe7n9boxdzen
+  | > &response_type=code
+  | > &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+  | > &scope=...
+  | > &state=...
+  | > &code_challenge=...&code_challenge_method=...
+  | > &...=   <··· WARN: `request_uri` MUST NOT be provided.
+  | > (Next params are optionally used to authenticate the client,
+  | >  but will not be stored as part of the request)
+  | > &client_secret=...        
+  | > &client_assertion_type=
+  | >  urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+  | > &client_assertion=${JWK}
+  |
+  | OAuth Server ->  user Agent:
+  |            ┌─┬─················· required for succesful response
+  | < HTTP/1.1 201 Created           See original spec for error codes.
+  | < Cache-Control: no-cache, no-store
+  | < Content-Type: application/json
+  | < 
+  | < {
+  | <   "expires_in": 90
+  | <   "request_uri": "urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2",
+  | < }                 └─────────────────┬───────────────────┘
+  |   ┌───────────────────────────────────┘
+  |   Used by client as ref like:
+  |   GET /authorize?client_id=CLIENT1234
+  |       &request_uri=urn%3Aexample%3Abwc4JK-ESC0w8acc191e-Y1LTC2 HTTP/1.1
+  |        └─────────┴── due to code_challenge of type nonce, it must be 
+  |                      used only once.
+  |
+  |   Host: as.example.com
   ```
 * See original spec for new Authorization Server and Client Metadata
 * See original spec for Security and Privacy Considerations

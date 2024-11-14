@@ -1160,3 +1160,12 @@ The following use cases are described:
   $ mvn compile exec:java -Dexec.mainClass="com.samlsecurity.opensamlSamples.gettingStartedAuthnrequest.GenAuthnRequest"
   ```
 
+# SAML-Toolkits/java-saml: Java SAML toolkit  [[{SAML.101,soft_arch.java]]
+
+* <https://github.com/SAML-Toolkits/java-saml#dependencies>
+  El fichero compacto de inf. sirve tambiėn para ver las opc. Generales de SAML2.
+[[SAML.10}]]
+
+# Identity: SAML2 – Spring Security 5.2 Tutorial – Code Tinkering
+* <https://codetinkering.com/saml2-spring-security-5-2-tutorial/>
+

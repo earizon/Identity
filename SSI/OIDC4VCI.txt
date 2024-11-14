@@ -1,5 +1,14 @@
 # OpenID for Verifiable Credential Issuance
 
+  ```
+  <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-document-history>
+  Draft 14 <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-14.html#name-document-history>
+  Draft 13 <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-13.html#name-document-history>
+  Draft 12 <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-12.html#name-document-history>
+  Draft 11 <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-11.html#name-document-history>
+  Draft 10 <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-10.html#name-document-history>
+  ```
+
 * Lead by the OpenID Global Assured Identity Network (GAIN) "Consortium" <https://openid.net/cg/gain-poc/>.
   This network includes:
   * Cloud Signature Consortium,  committed to driving standardization of highly secure and compliant digital signatures in the cloud.

@@ -1,22 +1,32 @@
 Decentrilized_Identity_foundation.txt // 71 lines
-presentation_definition.txt              // OK
-W3C_VC_v1_model.txt                      // OK
+presentation_definition.txt    // OK https://identity.foundation/presentation-exchange/spec/v2.0.0/
+W3C_VC_v1_model.txt            // OK https://www.w3.org/TR/vc-data-model/
+OIDC4VCI_draft10.txt           // OK, required by EBSI. https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-11.html#name-document-history
+VC_StatusListv2021.txt         // https://www.w3.org/TR/2023/WD-vc-status-list-20230427/
+                               // Deprecated, used by EBSI.  
+// WiP:     ────────────────────────────────────────────────────────────────────
+OIDC4VCI.txt // draft10 "OK" pending upgrades
+CBOR.txt
+ISO.18013.txt
+ISO.23220.txt
+VC_BitstringStatusList.txt // https://www.w3.org/TR/vc-bitstring-status-list/
 // TODO:(0) ────────────────────────────────────────────────────────────────────
-OpenID_for_VerifiablePresentations.txt // @ma
+OpenID_for_VerifiablePresentations.txt   // @ma
 WiP_W3C_VC_v2_model.txt                  // 0 lines 
 W3C_VC_Implementation_Guidelines_1.0.txt // TODO:(0)
 // Concise Binary Object Representation (CBOR). C. https://www.rfc-editor.org/rfc/rfc7049 
+// Schaad, J., "CBOR Object Signing and Encryption (COSE)", RFC 8152, DOI 10.17487/RFC8152, July 2017, <https://www.rfc-editor.org/info/rfc8152>. 
 ../JWT_JWS_JOSE.txt
 sd_jwt.txt                               //   2 lines
 OAuth_status_attestation.txt // 1 lines
 WiP_SIOPv2.txt                           // 427 lines
-WiP_OIDC4VC.txt                          //   4 
+
 TODO_DIDComm.txt                         // 11 lines
 TODO_EUIDW_PID_ruleBook.txt              // 609 lines
 // FUTURE: ─────────────────────────────────────────────────────────────────────
 DIDRoom_eDIAS2_wallet.txt
 W3C_VC_API.txt 
-// OTROS: ─────────────────────────────────────────────────────────────────────
+// OTROS: ──────────────────────────────────────────────────────────────────────
 // did_ethereum_implementations.txt
 // 79 WaltID_SDK.txt
 // TODO:(0.5)
@@ -26,6 +36,10 @@ WiP_DID_Registration.txt //  1219
 // solid_protocol.txt
 
 // Review:
+# BSI-TR-03111_V-2-1_Elliptic_Curve_Cryptography.pdf
+# ISO_IEC_FDIS_18013-5 1 (1).pdf
+# Analysis_of_Selective_Disclosure_And_ZeroKnowledgeProofs_Applied_toElectronicAttestationOfAttributes.pdf
+
 // JSON-LD 1.1: JSON-based Serialization for Linked Data. https://www.w3.org/TR/json-ld11/ 
 // W3C XML Schema Definition Language (XSD) 1.1 Part 2: Datatypes. https://www.w3.org/TR/xmlschema11-2/ 
 // A Signature Scheme with Efficient Protocols. https://www.researchgate.net/publication/220922101_A_Signature_Scheme_with_Efficient_Protocols , Peer Reviewed Paper. 
@@ -51,3 +65,4 @@ WiP_DID_Registration.txt //  1219
 //     Verifiable Credentials Use Cases. Shane McCarron; Joe Andrieu; Matt Stone; Tzviya Siegman; Gregg Kellogg; Ted Thibodeau. W3C. 24 September 2019. W3C Working Group Note. URL: https://www.w3.org/TR/vc-use-cases/ 
 // [WCAG21]
 //     Web Content Accessibility Guidelines (WCAG) 2.1. Andrew Kirkpatrick; Joshue O'Connor; Alastair Campbell; Michael Cooper. W3C. 5 June 2018. W3C Recommendation. URL: https://www.w3.org/TR/WCAG21/ 
+// https://github.com/w3c-ccg 100+ repositories

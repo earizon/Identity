@@ -4,8 +4,9 @@
   | Draft 20: (29 November 2023 )
   | <https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html>
   | <https://github.com/openid/OpenID4VP>
-  | Draft 21: (9 May 2024 )
-  | https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html#name-document-history
+  | <https://openid.github.io/OpenID4VP/openid-4-verifiable-presentations-wg-draft.html#name-document-history>
+  | Draft 21: (9 May 2024 ) [[{PM.TODO}]]
+  | - https://github.com/openid/OpenID4VP/releases/tag/draft-21
   ```
 
 * enables presentation of VCs as Verifiable Presentations on any format 
@@ -25,6 +26,7 @@
     ID Token [SIOPv2]):
     * A VP Token contains 1+ single Verifiable Presentations in one or
       different formats.
+<!-- @ma --> 
 * OIDCVP contemplate also cross-device scenarios:
   ```
   |      ORIGIN                                         DESTINATION

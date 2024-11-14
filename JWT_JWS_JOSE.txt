@@ -232,7 +232,7 @@
   | (values are case-sensitive)
   | { 
   |                        // Common key params
-  |   "kid":"...."       <·· OPT: Unique  (in-JWT Set) key ID, used to
+  |   "kid":"....",      <·· OPT: Unique  (in-JWT Set) key ID, used to
   |                          match a specific key, used for example in
   |                          JWK Sets key rollovers.
   |                          Structure is unspecified, but it is RECOMMENDED
@@ -241,7 +241,6 @@
   |                          matches all values.
   |                          e.g:In JWS&JWE it is used to match JWS/JWE with
   |                          Header Parameter value.
-  |  during key rollover.  
   |   "kty":"EC",        <·· key type: (RSA|EC|...) ¹
   |   "use":"sig"        <·· OPT.  sig(nature) | enc(ryption), 
 
@@ -253,7 +252,7 @@
   |                          · "deriveKey" · "deriveBits" 
   |                          (other values MAY be used)
   |
-  |   "alg"             <·· OPT. Algorithm intended for use 
+  |   "alg": "..."      <·· OPT. Algorithm intended for use 
   |                         with the key, with value registered
   |                         in JWA or custom collision-resistant name.
   |
@@ -294,6 +293,74 @@
   | ³ "use" and "key_ops" JWK members SHOULD NOT be used together
   |   or if forced, their values must be consistent.
   ```
+* Example. Exporting bytes32 private key to JWK in NodeJS/Typescript:
+  ```
+  | import elliptic from "elliptic";
+  | import { base64url } from "jose";
+  | import type { JWK } from "jose";
+  | type JWKWithKid = JWK & { kid: string };
+  | type KeyPairResult = { privateKeyJwk: JWKWithKid; publicKeyJwk: JWKWithKid };
+  | 
+  | // private key to export. 
+  | const BYTES32_PRI_KEY="6602a1007f8375d5b836a507c2504c9ee475d0614c5b2e22edea2ab8a323029b"
+  | 
+  | async function 
+  | getKeyPair( PRIV_KEY: string, ALG: string, KEYID: string): Promise<KeyPairResult> {
+  |   const ec: elliptic.ec | null = (ALG === "ES256K") 
+  |     ? new elliptic.ec("secp256k1")  : (ALG === "ES256") 
+  |     ? new elliptic.ec("p256") : null
+  |   if (ec === null) throw new Error(`${ALG} not supported`)
+  | 
+  |   // KEY-POINT: ec.keyFromPrivate calculates pub.key
+  |   const KP /*key pair*/ = ec.keyFromPrivate(PRIV_KEY, "hex");
+  |   const validation = KP.validate();
+  |   if (validation.result === false) {
+  |     throw new Error(validation.reason);
+  |   }
+  |   // Format as JWK
+  |   const publicKeyJwk = {
+  |     kty: "EC",
+  |     crv: ALG === "ES256K" ? "secp256k1" : "P-256",
+  |     ALG,
+  |     x: base64url.encode(KP.getPublic().getX().toBuffer("be", 32)),
+  |     y: base64url.encode(KP.getPublic().getY().toBuffer("be", 32)),
+  |     kid: KEYID
+  |   };
+  |   const d = base64url.encode(Buffer.from(PRIV_KEY, "hex"));
+  |   const privateKeyJwk = { ...publicKeyJwk, d : d };
+  |   return { publicKeyJwk, privateKeyJwk };
+  | }
+  | 
+  | (
+  | async (): Promise<void> => {
+  |   const keyPairAsJWK = await getKeyPair(BYTES32_PRI_KEY, "ES256", "key1");
+  |   console.log(JSON.stringify(keyPairAsJWK, null, "  "))
+  | }
+  | )().then(() => {}).catch((e) => { throw e; });
+  ```
+  Output will be similar to:
+  ```
+  | {
+  |   "publicKeyJwk": {
+  |     "kty": "EC",
+  |     "crv": "P-256",
+  |     "ALG": "ES256",
+  |     "x": "qNuerkbAtwExHgKSUPlaLU-dV6xAuSRFA69s_EF6OGQ",
+  |     "y": "u_QQlBskMpvs-AT1fW0Gp_pKjbGIgdg4Lrn_sAn-43g",
+  |     "kid": "key1"
+  |   },
+  |   "privateKeyJwk": {
+  |     "kty": "EC",
+  |     "crv": "P-256",
+  |     "ALG": "ES256",
+  |     "x": "qNuerkbAtwExHgKSUPlaLU-dV6xAuSRFA69s_EF6OGQ",
+  |     "y": "u_QQlBskMpvs-AT1fW0Gp_pKjbGIgdg4Lrn_sAn-43g",
+  |     "kid": "key1",
+  |     "d": "ZgKhAH-DddW4NqUHwlBMnuR10GFMWy4i7eoquKMjAps"
+  |   }
+  | }
+  ```
+
 * Example JWK Set:
   ```
   | {
@@ -362,7 +429,7 @@
  ```
 
 ### JOSE Implementations:
-* REF: @[https://www.npmjs.com/package/node-jose]
+* REF: <https://www.npmjs.com/package/node-jose>
 * JS implementation of the JSON Object Signing and Encryption (JOSE)
   for current web browsers and node.js-based servers. This library implements
   (wherever possible) all algorithms, formats, and options in JWS, JWE, JWK, and

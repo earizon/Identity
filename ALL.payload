@@ -3,8 +3,8 @@ notes.txt
 FIDO_passwordless.txt
 // OAuth / OpenID {{{
 JWT_JWS_JOSE.txt
-OAuth_OpenIDConnect.txt
-OAuth_pushed_authorization_request.txt
+OAuth_OpenIDConnect.txt // <http://openid.net/specs/openid-connect-core-1_0.html>. 
+OAuth_pushed_authorization_request.txt // OK
 // WiP:
 WiP_RFC_9101_JWT_Secured_AuthorizationRequest.txt // TODO:(0)
 // TODO:

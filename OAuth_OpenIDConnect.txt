@@ -93,7 +93,8 @@
 # OAuth Protocol
 
 * <https://tools.ietf.org/html/rfc6749>
-* <https://alexbilbie.com/guide-to-oauth-2-grants/>
+* <http://alexbilbie.github.io/guide-to-oauth-2-grants/>
+
 
 * OAuth Global Picture. Different applications share the same
   Authentication logic by using a "central" OAuth Provider.
@@ -334,7 +335,8 @@
   |
   | browser -> App3rd : req resource
   | App3rd -> browser : NO access_token found in request. Redirect
-  | browser -> OAS    : redirect to https://OAuthServer/oauth2/token
+  |                     to  https://OAuthServer/oauth2/token
+  | browser -> OAS    : GET 
   |                    ?response_type=${value_code}
   |                    &client_id=${App3rd_client.id}
   |                    &redirect_uri=${REDITECT_URI} <·· (Optional if pre-registered URI)
@@ -1105,6 +1107,7 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 
 [[{Protocol.OAuth.JAR,cryptography.signature.jwt,cryptography.encryption.jwe]]
 # OAuth (JWT)Secured Authorization Request (JAR)
+* See also related JWT Secured Authorization Responde Mode (JARM)
 * Part of the OAuth 2.0 Authorization Framework.
 
 * https://datatracker.ietf.org/doc/rfc9101/
@@ -1287,6 +1290,8 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
 [[Protocol.OAuth.JAR}]]
 
 # OAuth (JWT)Secured Authorization Response Mode  (JARM) [[{Protocol.OAuth.JARM]]
+
+* See also related JWT Secured Authorization Request (JAR)
 * REF: <https://openid.net/specs/oauth-v2-jarm.html>
 
 * JWT-based mode to encode OAuth authorization responses
@@ -1397,5 +1402,5 @@ Summary from <https://openid.net/specs/openid-connect-core-1_0.html>)
   <https://tools.ietf.org/html/rfc6819>
 
 OThers:
-* @[https://oauth.net/2/]
+* <https://oauth.net/2/>
 [[}]]

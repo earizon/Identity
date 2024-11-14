@@ -97,6 +97,7 @@ Table 1 and Table 2 contain the following information:
             defined in \[RFC 3339\] SHALL be to "Z".
 
 #### 2.3.2 Overview
+
 | PID attribute in [ARF]  | Corresponding data element identifier(s) | Definition | Presence | Encoding format |
 |---|---|---|---|---|
 | **Current Family Name** |  |  |  |  |

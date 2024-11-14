@@ -1,9 +1,25 @@
-# ISO 18013-5 mobile Driving Licence (mdoc/mDL)  
+# ISO 18013 Personal identification — ISO-compliant driving licence
 
-## Credential Format Profile ("extension points") for mDL when used in OIDC4VCI:
+## Part 1: Physical characteristics and basic data set
+
+* Status: Published
+
+## Part 2: Machine-readable technologies
+
+## Part 3: Access control, authentication and integrity validation
+
+## Part 4: Test methods
+
+## Part 5: Mobile driving licence (mDL) application
+
+* """This document establishes interface specifications for the 
+   implementation of a driving licence in association with a mobile 
+   device. This document specifies the interface between the mDL and mDL 
+   reader and the interface between the mDL reader and the issuing 
+   authority infrastructure."""
+
+### Credential Format Profile ("extension points") for mDL when used in OIDC4VCI:
 * https://w3c-ccg.github.io/vdl-vocab/ [[{PM.TODO}]]
-
-* Online CBOR decoder: <https://cbor.zone/>
 
 * Summary extracted from Apendix E.2 at 
   <https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-11.html#name-document-history>
@@ -90,7 +106,8 @@
 * claims: OPTIONAL. 
 
 
-## identity-credential Implementation @ openwallet-foundation-labs [[{EUIDW.openwallet]]
+### identity-credential Implementation @ openwallet-foundation-labs 
+[[{EUIDW.openwallet]]
 * <https://github.com/openwallet-foundation-labs/identity-credential>
 * libraries and applications for working with Real-World Identity.
 * initial focus: mdoc/mDL according -ISO/IEC 18013-5:2021- and 
@@ -137,7 +154,14 @@
 * contains source code for a website acting as an mdoc reader.
 [[EUIDW.openwallet}]]
 
-## Issuing VC in SD-JWT VC&mdoc/mDL formats, 
+## Part 6: mDL test methods
+
+## Part 7: Mobile driving licence (mDL) add-on functions
+
+
+# ISO 18013 Non Classified / TODO
+
+## Issuing VC in SD-JWT VC&mdoc/mDL formats,
 
 * mandated in eIDAS 2.0
 * <https://darutk.medium.com/oid4vci-demo-87a232cfcc2a>
@@ -213,7 +237,7 @@
   MjAyNS0wMS0xMlQwMDoxMDowNVpYQHFzEb09NFyF                } >>)
   lj533FE_1B9I2rku90K52ar64Id1CyOUXWXzhINe            ]
   VfoJU1cfxgCT2CX1369cGd_TQxSjhVx8bpY               },
-  ```                                               "issuerAuth": [ h'a10126',
+                                                    "issuerAuth": [ h'a10126',
                                                       {
                                                         33: h'3082015d30820104a0030201020206018c91d9c219300a06082a8648ce3d04030230363134303206035504030c2b4a3146774a50383743362d514e5f5753494f6d4a415163366e3543515f625a6461464a3547446e5731526b301e170d3233313232323134303635365a170d3234313031373134303635365a30363134303206035504030c2b4a3146774a50383743362d514e5f5753494f6d4a415163366e3543515f625a6461464a3547446e5731526b3059301306072a8648ce3d020106082a8648ce3d03010703420004028a5579ba09a58472730d582a49113977c2a4a10a97d63560f1613868f8c5383650eba7c53c52215913f78a85548baed61904a04d8dc5e959a37fb24c550e0c300a06082a8648ce3d040302034700304402206716349c05cbc446578b8cc0aee4d6f124a90db1afe04219174df0e66eaf93de022055acdbb15750bd9825b9cf672584315a5cd74fd8ba7fec2050ac7428261b8f70'
                                                       },
@@ -243,3 +267,4 @@
                                                     ]
                                                   }
                                                 }
+  ```

@@ -1,0 +1,144 @@
+# Indy Privacy by default [[{dev_stack.indy,privacy,TODO]]
+<https://www.infoq.com/news/2018/09/Hyperledger-Indy-Privacy>
+
+Hyperledger Indy "Privacy by Design" for decentralized identity management
+
+ Business Insider recently published a report citing a Facebook
+breach enabled attackers to use compromised Facebook credentials
+to access other services like Tinder, Spotify and Airbnb.
+
+Hyperledger Indy is being built to address current issues:
+ - A lack of transparency in how data is being used.
+ - Preventing the "over-sharing" of data by providing only
+   the minimal data attributes to a service provider.
+ - A single "centralized" point of breach may have cascading consequences.
+   If a user's credentials have been used to sign up for
+   other online services, those services can also be accessed
+   using these credentials.
+
+Avoiding data leakage is a key scenario that Hyperledger is trying to address.
+ """Hyperledger Indy allows you to construct interactions where the degree
+ of disclosure is explicit and minimal, much smaller than what was previously
+ possible. Nothing about the mechanics of connecting, talking, or proving in
+ Indy is leaky with respect to privacy; vulnerabilities that emerge must
+ come from the broader context. No other technology takes this minimization
+ as far as Indy does, and no other technology separates interactions from one
+ another as carefully. If privacy problems are like a biohazard, Indy is
+ the world's most vocal champion of wearing gloves and using a sharps
+ container for needles  and it provides the world's best latex and disinfectants."""
+
+- Indy uses Decentralized Identities (DIDs). DIDs are under the control
+ of the user that owns it and is independent from a centralized provider
+ or authority. By using DIDs, Self-Sovereign Identity (SSI) solutions can
+ be developed so that a person or business can store their identity and
+ provide relevant data to service providers who can validate it using claims
+ at the time of using the service.
+
+-*DIDs are pairwise unique and pseudonymous by default to prevent
+ ºcorrelationº. Phillip J. Windley, chair of Sovrin Foundation, explains
+  why this is important:
+  - Indy is all about giving identity owners independent control of their
+  personal data and relationships. Indy is built so that the owner of the
+  identity is structurally part of transactions made about that identity.
+  - Pairwise identifiers not only prevent correlation, but they stop third
+  parties from transacting without the identity owner taking part since the
+  identity owner is the only place pairwise identifiers can be correlated.
+
+- While DIDs seems like a step in the right direction for end-user
+privacy, there are ways in which organizations may try to defeat the
+protection that Indy is providing. Hardman explains:
+
+- If we use pairwise DIDs and zero-knowledge proofs, the message is
+  clearly "don\u2019t try to correlate me", even if you could find a
+  way to do it if you try hard enough. An HTTP Do-Not-Track header says
+  "do not track me", but it doesn\u2019t offer any actual protection
+  from tracking. The VRM community has been talking about user-defined
+  terms for a long time. In a relationship, you can express "don\u2019t
+  use my data for advertising" or "delete my data after 14 days" or
+  "use my data for research, but not commercially".
+
+- Hardman feels that expressing these intentions in code and
+architecture does have value by itself and is optimistic about its
+effectiveness moving forward:
+
+- Over time, we expect that through regulation, trust frameworks,
+ reputation, and similar mechanisms, not honoring such intentions will
+ be discouraged. Of course we must always communicate clearly the
+ limits of intentions and guarantees, lest we create a false sense of
+ security that can lead to severe consequences.
+
+- Hyperledger does provide incentives for transforming privacy.
+ Currently, storing Personal Identifiable Information (PII) creates
+ risk for both consumers and corporations. However, by storing an
+ opaque identifier for a customer and then making requests to a
+ customer\u2019s agent to obtain more information on-demand and
+ discard after its use is a step in the right direction for consumers
+ and de-risks broadscale data breaches.
+[[dev_stack.indy}]]
+
+# Verifiable Organizations Network (Canada Gov) [[{dev_stack.indy]]
+The Verifiable Organizations Network (VON) is a community effort to
+establish a better way to find, issue, store and share trustworthy
+data about organizations—locally and around the globe. Community
+partners are using jointly developed software components to enable
+the digitization of government-issued public
+credentials—registrations, permits, and licenses. Currently, VON
+components are based on Hyperledger Indy distributed ledger
+technology. VON helps by making:
+- applying for credentials faster and less error prone
+- issuing (and reissuing) credentials simpler and more secure, and
+- verifying credentials more standard, trustworthy, and transparent, anywhere in the world.
+
+- The first production services, OrgBook BC, and Ontario's Verifiable
+  Businesses are publicly accessible, open-source, and show what future
+  business permits and licenses could look like.
+[[}]]
+
+
+# Indy Use Case Example  [[{dev_stack.Indy,TODO]]
+<https://github.com/IBM-Blockchain-Identity/indy-ssivc-tutorial>
+The Indy World Demo implements the Alice Demo described in Getting
+Started with Indy. The demo shows how a self-sovereign identity
+("SSI") can be used to obtain credentials from an issuer and supply
+these credentials to a verifier in response to a proof request thus
+providing a verifiable proof.
+
+As part of an initiative to manage Verifiable Organizations with
+Self-Sovereign Identities, the Government for the Province of British
+Columbia ("BC-Gov") in partnership with Public Services and
+Procurement Canada and the Government of Ontario, has contributed
+several open-source projects that are helpful in bootstrapping new
+applications that make use of Hyperledger Indy ("Indy") and
+Verifiable Credentials. This Indy World Demo is derived from the
+permitify and von-network repositories.
+
+- Github activity:
+<https://github.com/decentralized-identity>
+[[}]]
+
+# https://github.com/bcgov/aries-vcr
+- Hyperledger Indy Catalyst is a set of application level software
+  components designed to accelerate the adoption of trustworthy entity
+  to entity1 communications based on Decentralized Identity /
+  Self-Sovereign Identity technology and architecture. Indy Catalyst is
+  builds upon globally available open standards and open source
+  software. At present, Indy Catalyst builds upon Hyperledger Indy,
+  common enterprise open source software, frameworks and patterns such
+  as PostgreSQL, Python, Angular and RESTful APIs. Efforts will be
+  taken to design the software to facilitate the incorporation of
+  evolving open standards and technology. The impetus for Indy Catalyst
+  came from the Verifiable Organizations Network (VON) project. More
+  information about VON can be found at vonx.io
+
+# Indy World Demo:
+  https://github.com/IBM-Blockchain-Identity/indy-ssivc-tutorial
+As part of an initiative to manage Verifiable Organizations with
+Self-Sovereign Identities, the Government for the Province of British
+Columbia ("BC-Gov") in partnership with Public Services and
+Procurement Canada and the Government of Ontario, has contributed
+several open-source projects that are helpful in bootstrapping new
+applications that make use of Hyperledger Indy ("Indy") and
+Verifiable Credentials. This Indy World Demo is derived from the
+permitify and von-network repositories.
+
+

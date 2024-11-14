@@ -1,0 +1,62 @@
+# ISO 23220 Cards and security devices for personal identification 
+
+— Building blocks for identity management via mobile devices
+
+## Part 1: Generic system architectures of mobile eID systems
+
+* Preview @ <https://webstore.ansi.org/>
+  ```
+  | ISO/IEC 23220-1:2023(E)
+  | 1 Scope
+  | 2 Normative references
+  | 3 Terms and definitions
+  | 4 Abbreviated terms
+  | 5 Design and privacy principles of mobile document systems
+  |   5.1 Design principles
+  |   5.2 Privacy and security principles
+  |     5.2.1 General
+  |     5.2.2 Data minimization
+  |     5.2.3 Consent and choice:
+  |     5.2.4 Accuracy and quality
+  |     5.2.5 Information security
+  | 6 General life-cycle phases and components of mobile document systems
+  |   6.1 Life-cycle phases of mobile document systems
+  |   6.2 Components of a mobile document system
+  |     6.2.1 Operational modes of components
+  |     6.2.2 Components of mobile document systems
+  | 7 Generic system architectures of mobile document systems in installation phase
+  | 8 Generic system architectures of mobile document systems in issuing phase
+  |   8.1 Source of user attributes
+  |   8.2 Generic sub-phases of issuing phase
+  |   8.3 System architectures in sub-phases user identification and mID-discovery
+  |   8.4 Architectures in sub-phase issuance
+  |   8.5 Monitoring service in issuing phase
+  | 9 On-site identification system architecture in operational phase
+  |   9.1 General sub-phases of on-site identification system architecture
+  |   9.2 On-site identification system architecture with local attribute storage
+  |   9.3 On-site identification system architecture with remote attribute storage
+  | 10 Remote identification system architecture in operational phase
+  |   10.1 General
+  |   10.2 Remote identification system architecture with local attribute storage
+  |   10.3 Remote identification system architecture with remote attribute storage
+  | 
+  | Annex A (informative) Examples of deployment options for issuers in issuing phase
+  | Annex B (informative) Examples of deployment options in installation phase
+  | Annex C (informative) Examples of holder enrolment
+  | Annex D (informative) Examples of additional physical factor(s) of authentication
+  | Bibliography
+  ```
+
+## Part 2: Data objects and encoding rules for generic eID systems
+
+## Part 3: Protocols and services for issuing phase
+
+* Status: "Under development"
+
+## Part 4: Protocols and services for operational phase
+
+* Status: "Under development", 2024-08
+
+## Part 5: Trust models and confidence level assessment (project deleted)
+
+## Part 6: Mechanism for use of certification on trustworthiness of secure area (project deleted)
